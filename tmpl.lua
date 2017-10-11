@@ -11,10 +11,11 @@ local function prepare(txt_tmpl, openmark, closemark)
 	local r = {}
 	local addstatic = function(x) table.insert(r, x) end
 	local addmark = function(x) table.insert(r, {x,tag="mark"}) end
-	local trailing = string.gsub(txt_tmpl, "(.-)"..openmark.."([0-9a-z]+)"..closemark, function(a,b)
+	local trailing = string.gsub(txt_tmpl, "(.-)"..openmark.."([0-9a-z \t]+)"..closemark, function(a,b_c)
 		if a and a~="" then
 			addstatic(a)
 		end
+		local b,c = b_c:gsub("[ \t]+", " "):match("^ *([^ ]+) *([^ ]*) *$")
 		if b then
 			if b:find("^[0-9]+$") then -- is a base10 number
 				local n = assert(tonumber(b, 10), "fail to convert base10 number")
@@ -60,7 +61,7 @@ M.ast["mark"] = function(ast, values)
 	local k = assert(ast[1])
 	local v2 = values[k]
 	assert(v2, "no value found for "..tostring(k))
-	for _n=1,10 do -- while v3 is a template (max 1000 recursions)
+	for _n=1,10 do -- while v3 is a template (max 10 recursions)
 		v2 = render(v2, values)
 		if type(v2)~="table" then
 			break
@@ -71,5 +72,12 @@ M.ast["mark"] = function(ast, values)
 	end
 	assert(type(v2)=="string", "v2 is not a string ?!")
 	return v2
+end
+M.ast["loop"] = function(ast, values, withtemplate)
+	local r = {}
+	for i,v in ipairs(ast) do
+		table.insert(r, render(withtemplate, v))
+	end
+	return table.concat(r,"")
 end
 return M
