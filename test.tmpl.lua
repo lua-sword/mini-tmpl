@@ -17,7 +17,7 @@ do
 		v2,
 		["n"]="'",
 	})
-	print(R)
+	assert(R==[['I am ME Hello Z WORLD']])
 end
 
 do
@@ -30,5 +30,6 @@ do
 		z="Z",
 		w="WORLD",
 	})
-	print(R)
+	assert(R==[['I am ME Hello Z WORLD']])
 end
+print("ok")
