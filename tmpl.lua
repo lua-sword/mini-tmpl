@@ -41,21 +41,17 @@ local function render(ast, values)
 		local k = assert(ast[1])
 		local v2 = values[k]
 		assert(v2, "no value found for "..tostring(k))
-		local v3 = v2
 		for _n=1,10 do -- while v3 is a template (max 1000 recursions)
-			v3 = render(v3, values)
-			if type(v3)~="table" then
+			v2 = render(v2, values)
+			if type(v2)~="table" then
 				break
 			end
-			--if v3.tag=="template" then
-			--	v3 = render(v3, values)
-			--else
-			if v3.tag~="template" then
+			if v2.tag~="template" then
 				error("resolved is still not a valid value")
 			end
 		end
-		assert(type(v3)=="string", "v3 is not a string ?!")
-		return v3
+		assert(type(v2)=="string", "v2 is not a string ?!")
+		return v2
 	elseif type(ast)=="table" and ast.tag=="template" then
 		local r = {}
 		for _i, a in ipairs(ast) do
