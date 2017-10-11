@@ -10,9 +10,8 @@ local function prepare(txt_tmpl, openmark, closemark)
 	if not closemark then closemark = M.closemark end
 	local r = {}
 	local addstatic = function(x) table.insert(r, x) end
-	local addmark = function(x) table.insert(r, {x}) end
-	string.gsub(txt_tmpl, "(.-)"..openmark.."([0-9a-z]+)"..closemark, function(a,b)
-		--print("abc", a, openmark..b..closemark)
+	local addmark = function(x) table.insert(r, {x,tag="mark"}) end
+	local trailing = string.gsub(txt_tmpl, "(.-)"..openmark.."([0-9a-z]+)"..closemark, function(a,b)
 		if a and a~="" then
 			addstatic(a)
 		end
@@ -26,40 +25,45 @@ local function prepare(txt_tmpl, openmark, closemark)
 		end
 		return ""
 	end)
-	r._type="template"
+	if trailing and trailing~="" then
+		addstatic(trailing)
+	end
+	r.tag="template"
 	return r
 end
 M.prepare = prepare
 
-local function render(t_tmpl, values)
-	assert(t_tmpl._type=="template")
-	local r = {}
-	for _i, v in ipairs(t_tmpl) do
-		if type(v) == "table" then
-			if v._type=="template" then
-				local v2 = render(v, values)
-				table.insert(r, v2)
-			else
-				local k = assert(v[1])
-				local v2 = values[k]
-				assert(v2, "no value found for "..tostring(k))
-				if type(v2)=="table" then
-					if v2._type=="template" then
-						local v3 = render(v2, values)
-						table.insert(r, v3)
-					else
-						error("resolved is still not a valid value")
-					end
-				else
-					assert(type(v2)=="string", "v2 is not a string ?!")
-					table.insert(r, v2)
-				end
-			end
-		elseif type(v) == "string" then
-			table.insert(r, v) -- a static string added
-		end
+local function render(ast, values)
+	if type(ast)=="string" then
+		return ast
 	end
-	return table.concat(r,"")
+	if type(ast)=="table" and ast.tag=="mark" then -- mark
+		local k = assert(ast[1])
+		local v2 = values[k]
+		assert(v2, "no value found for "..tostring(k))
+		local v3 = v2
+		for _n=1,10 do -- while v3 is a template (max 1000 recursions)
+			v3 = render(v3, values)
+			if type(v3)~="table" then
+				break
+			end
+			--if v3.tag=="template" then
+			--	v3 = render(v3, values)
+			--else
+			if v3.tag~="template" then
+				error("resolved is still not a valid value")
+			end
+		end
+		assert(type(v3)=="string", "v3 is not a string ?!")
+		return v3
+	elseif type(ast)=="table" and ast.tag=="template" then
+		local r = {}
+		for _i, a in ipairs(ast) do
+			table.insert(r, render(a, values))
+		end
+		return table.concat(r,"")
+	end
+	error("ast invalid type, must be a table(template|mark) or a string, got "..type(ast))
 end
 M.render=render
 return M

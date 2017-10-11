@@ -8,7 +8,6 @@ txt.bar = [[!{z} !{w}]]
 do
 	local t = tmpl.prepare(txt.foo)
 	local t2 = tmpl.prepare(txt.bar)
-
 	local v2 = tmpl.render(t2, {
 		z="Z",
 		w="WORLD",
@@ -24,7 +23,6 @@ end
 do
 	local t = tmpl.prepare(txt.foo)
 	local t2 = tmpl.prepare(txt.bar)
-
 	local R = tmpl.render(t, {
 		"ME",
 		t2,
