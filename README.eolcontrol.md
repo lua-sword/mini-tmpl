@@ -11,7 +11,7 @@ A end of line is :
 
 eolcontrol allow you to place special marks to always get the same result (platform independent)
 
-## Syntaxe
+## Syntax
 
 Use any kind of end-of-line in your template, even mixed.
 
