@@ -21,6 +21,35 @@ Use any kind of end-of-line in your template, even mixed.
 * `!l` for the end-of-line you will pass to eolcontrol (or Unix/Linux if omited)
 * `!!` to get a litteral `!`
 
+## Sample
+
+```lua
+local eolcontrol = require "tmpl.eolcontrol"
+
+assert(eolcontrol([[
+FOO!R
+BAR
+]]) == "FOO".."\r\n".."BAR")
+
+assert(eolcontrol([[
+FOO!n
+BAR
+]]) == "FOO".."\n".."BAR")
+
+assert(eolcontrol([[
+FOO!r
+BAR
+]]) == "foo".."\r".."BAR")
+
+local x =[[
+FOO!l
+BAR
+]]
+assert( eolcontrol(x, "\r\n") == "FOO\r\nBAR")
+assert( eolcontrol(x, "\r")   == "FOO\rBAR")
+assert( eolcontrol(x, "\n")   == "FOO\nBAR")
+```
+
 ## How to use
 
 ### Force Windows end-of-line
