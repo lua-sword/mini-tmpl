@@ -19,14 +19,14 @@
 -- 6. unquote the '!' to finish the 2. job
 --	!_ => !   (unquote)
 
-return function(txt)
+return function(txt, eolchar)
+	if not eolchar then eolchar="\n" end
 	return (txt
 		-- 1. all CRLF or CR => L
 		:gsub("\r\n", "\n")
 		:gsub("\r","\n")
 
 		-- 2. how to get a litteral '!'
-		--:gsub("!!","!_")
 		:gsub("(!.)", function(a)
 			if a=="!!" then return "!_" end
 			if a=="!_" then
@@ -37,7 +37,7 @@ return function(txt)
 		end)
 
 		-- 3. Check template issue case
-		:gsub("(![nrR])[^\n]",function(a)
+		:gsub("(![nrRl])[^\n]",function(a)
 			error(a.." is unproperly quoted or must be followed by an end of line")
 		end)
 
@@ -45,11 +45,12 @@ return function(txt)
 		:gsub("\n","")
 
 		-- 5. Make the end of line substitutions
-		:gsub("(![nrR])",function(b)
+		:gsub("(![nrRl])",function(b)
 			if b=="!n" then return "\n" end
 			if b=="!r" then return "\r" end
 			if b=="!R" then return "\r\n" end
-			error("should not append")
+			if b=="!l" then return eolchar end
+			error("eolcontrol: unattented case. (step 3 check evasion ?)")
 		end)
 
 		-- 6. unquote the '!' to finish the 2. job
@@ -57,14 +58,3 @@ return function(txt)
 		:gsub("!_","!")
 	)
 end
-
--- 'foo!n\nbar'		=> 'foo\nbar'
--- 'foo!!n\nbar'	=> 'foo!nbar'
--- 'foo!!n!n\nbar'	=> 'foo!n\nbar'
--- 'foo!n!!n\nbar'	=> error "!n is unproperly quoted or must be followed by a end of line"
--- 'foo!n\n!!n\nbar'	=> 'foo\n!!nbar'
-
--- '!!' => '!'
--- '!_' => '!_'
--- '!!_' => '!_'
--- '!!!_' => '!!_'
