@@ -10,3 +10,7 @@ Made to :
 
 No specific web encoding stuff
 
+
+# end-of-line control
+
+See the [README.eolcontrol.md](README.eolcontrol.md)
