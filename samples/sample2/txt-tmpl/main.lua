@@ -1,13 +1,12 @@
-return (([[
-
-# begin!{\n}
+return [[
+# begin!n
 
 !{head}
 
-!{body}
+!{list>tlist}
 
 !{foot}
 
-# end!{\n}
+# end!n
 
-]]):gsub("\n", ""):gsub([[!{\n}]],"\n"))
+]]

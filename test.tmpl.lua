@@ -1,8 +1,20 @@
 
 local tmpl = require "tmpl"
+local eolcontrol = require "tmpl.eolcontrol"
+assert(eolcontrol(([[
+foo\n
+bar
+buz\n
+\n
+]]):gsub("\\n","!n"))=="foo\nbarbuz\n\n")
 
 local txt = {}
-txt.foo = [[!{n}I am !{1} Hello !{2}!{n}]]
+txt.foo = (
+[[!{q}
+!{   }I am !{1}
+!{             } Hello !{2}
+!{                        }!{q}]]
+):gsub("\n","")
 txt.bar = [[!{z} !{w}]]
 
 do
@@ -15,7 +27,7 @@ do
 	local R = tmpl.render(t, {
 		"ME",
 		v2,
-		["n"]="'",
+		["q"]="'",
 	})
 	assert(R==[['I am ME Hello Z WORLD']])
 end
@@ -26,7 +38,7 @@ do
 	local R = tmpl.render(t, {
 		"ME",
 		t2,
-		["n"]="'",
+		["q"]="'",
 		z="Z",
 		w="WORLD",
 	})
