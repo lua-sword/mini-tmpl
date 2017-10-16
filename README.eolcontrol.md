@@ -55,7 +55,7 @@ assert( eolcontrol(x, "\n")   == "FOO\nBAR")
 ### Force Windows end-of-line
 
 ```lua
-local x = eofcontrol[[
+local x = eolcontrol[[
 line 1!R
 line 2!R
 ]]
@@ -72,7 +72,7 @@ line 2\r\n
 ### Force MacOS end-of-line
 
 ```lua
-local x = eofcontrol[[
+local x = eolcontrol[[
 line 1!r
 line 2!r
 ]]
@@ -88,7 +88,7 @@ line 2\r
 ### Force Linux end-of-line
 
 ```lua
-local x = eofcontrol[[
+local x = eolcontrol[[
 line 1!n
 line 2!n
 ]]
@@ -104,7 +104,7 @@ line 2\n
 ### Force a Custom end-of-line
 
 ```lua
-local x = eofcontrol([[
+local x = eolcontrol([[
 line 1!l
 line 2!l
 ]], "\0")
@@ -142,7 +142,7 @@ linux line\n
 All other end-of-line are removed, then you can split lines like
 
 ```lua
-local x = eofcontrol([[
+local x = eolcontrol([[
 
 line
  1!l
