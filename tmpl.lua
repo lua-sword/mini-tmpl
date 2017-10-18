@@ -109,6 +109,7 @@ local function render(ast, values, templates)
 		if not f then
 			error("no handler for ast type "..ast.tag)
 		end
+--print("render(): ["..ast.tag.."] f(ast, values, templates) :"..tprint({ast=ast, values=values, templates=templates,}, {inline=false}))
 		return f(ast, values, templates)
 	end
 --print("DEBUG:", require"tprint"(ast))
@@ -118,16 +119,21 @@ M.render=render
 
 M.ast = {}
 M.ast["template"] = function(ast, values, templates)
+--	print("DEBUG tmpl.ast.template():")
 	local r = {}
-	for _i, a in ipairs(ast) do
-		table.insert(r, render(a, values, templates))
+	for _i, v in ipairs(ast) do
+		if type(v)=="string" then -- use native string instead of {tag="string", "foo"}
+			table.insert(r, v)
+		else
+			table.insert(r, render(v, values, templates))
+		end
 	end
 	return table.concat(r,"")
 end
 
 -- varname -> string value
 M.ast["var"] = function(ast, values, templates)
-	--print("DEBUG tmpl.ast.var():")
+--	print("DEBUG tmpl.ast.var():")
 	--print("  ast="..tprint(ast), type(ast))
 	--print("  values="..tprint(values), type(values))
 	--print("  templates="..tprint(templates), type(templates))
@@ -158,26 +164,39 @@ end
 
 -- varname -> list -> loop(list)
 M.ast["loop"] = function(ast, values, templates)
-	--print(tprint({ast, values, templates}, {inline=false}))
+--	print("tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=true}))
 	local k = assert(ast[1])
 	local templatename = assert(ast[2])
 	local list = assert(values[k])
 	local template = templates[templatename]
+	local dynamic = nil
+	local subtemplates = nil
+--	print("type(template.dynamic)", type(template.dynamic), "type(template.sub)", type(template.sub))
+	if type(template.dynamic)=="function" and type(template.sub)=="table" then
+--		print("DEBUG: template.dynamic FOUND!")
+		dynamic = template.dynamic
+		subtemplates = template.sub
+	end
 	--print("k=", k, "templatename=", templatename, "list=", tprint(list), "template=", tprint(template))
 	local r = {}
 	for i,item in ipairs(list) do
 		--print( render(template, item, templates))
 		-- TODO: dispatch function + sub templates
-		if type(ast.dynamic)=="function" and type(ast.sub)=="table" then
-			local k = ast.dynamic(i, #list)
+
+		if dynamic then
+			local k = dynamic(i, #list)
 			assert(k)
-			if k and ast.sub[k] then
-				template = ast.sub[k]
+--print("return k =", k)
+			if k and subtemplates[k] then
+				template = subtemplates[k]
 			end
+--		else
+--			print("DEBUG: NO dynamic")
 		end
+		local item2=item
 		if type(item)=="string" then
 			--print("convert item from", item)
-			item={item,i=tostring(i)}
+			item2={item,i=tostring(i)}
 			--print("to", tprint(item))
 		end
 		local values2 = {["meta"]={i=tostring(i)}, ["local"]=item, ["global"]=values,}
