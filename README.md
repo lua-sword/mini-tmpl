@@ -10,6 +10,15 @@ Made to :
 
 No specific web encoding stuff
 
+## Samples
+
+```lua
+local tmpl = require "tmpl"
+local a = tmpl.prepare("hello !{1}!")
+local b = tmpl.render(a, {[1]="world"})
+print(b) -- "hello world!"
+```
+
 
 # end-of-line control
 
