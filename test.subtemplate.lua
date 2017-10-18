@@ -42,14 +42,21 @@ peoples.sub.last=prep [[!{1}]]
 
 local templates = {}
 templates.peoples = peoples
+--templates[1] = templates.peoples -- prep[[!{peoples>peoples}]]
+templates[""] = templates.peoples
 
-local function hello(peoples)
-	return tmpl.render( prep[[Hello !{peoples>peoples}!]], {peoples = peoples}, templates)
+
+local function hello(peoples, t)
+	local main = prep[[Hello !{1>peoples}!]]
+	if t then
+		main = prep(t)
+	end
+	return tmpl.render( main, {peoples}, templates)
 end
 
-print(hello{ {"foo"} })
+print(hello({ {"foo"} }, [[Hellooo !{1>}!]]))
 print(hello{ {"foo"}, {"baz"} })
 print(hello{ {"foo"}, {"bar"}, {"buz"} })
-print(hello{ {"foo"}, {"bar"}, {"buz"}, {"bip"} })
+print(hello{ "foo", "bar", "buz", "bip" })
 
 

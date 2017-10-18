@@ -65,9 +65,12 @@ local function prepare(txt_tmpl, force)
 		local v,t,x
 		v_t_x = v_t_x:gsub("[ \t]+", " ")	-- replace multiples spaces to only one one space
 		if v_t_x:find(">", nil, true) then -- *>*
-			v,t,x = v_t_x:match("^ *([^ >]+) *> *([^ ]+) *(.*)$")
-			assert(t~="", "template name is empty")
-			assert(v) -- name or empty
+			v,t,x = v_t_x:match("^ *([^ >]+) *> *([^ ]*) *(.*)$")
+			--assert(t~="", "template name is empty")
+			assert(v)
+--			if v and not t then
+--				t=""  -- in case of !{var>}
+--			end
 			assert(x==nil or x=="", "xtra parameter are not implemented yet!")
 		else
 			v = v_t_x:match("^ *([^ ]+)")
@@ -199,7 +202,7 @@ M.ast["loop"] = function(ast, values, templates)
 			item2={item,i=tostring(i)}
 			--print("to", tprint(item))
 		end
-		local values2 = {["meta"]={i=tostring(i)}, ["local"]=item, ["global"]=values,}
+		local values2 = {["meta"]={i=tostring(i)}, ["local"]=item2, ["global"]=values,}
 
 		table.insert(r, render(template, values2, templates)) -- fallback value item => setmetatable(item, {__index=values})
 	end
