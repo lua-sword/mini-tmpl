@@ -35,6 +35,7 @@ M._VERSION = "mini.tmpl 0.1.0"
 
 -- try to load the debug module
 local dbg = pcall(require, "tmpl.debug") and require "tmpl.debug"
+local Dprint = false and print or function()end
 
 -- default marks
 M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
@@ -136,7 +137,7 @@ M.render=render
 
 M.ast = {}
 M.ast["template"] = function(ast, values, templates)
-	print("DEBUG tmpl.ast.template():", dbg and dbg.getname(ast) or "")
+	Dprint("DEBUG tmpl.ast.template():", dbg and dbg.getname(ast) or "")
 	local r = {}
 	for _i, v in ipairs(ast) do
 		if type(v)=="string" then -- use native string instead of `String{"foo"}
@@ -150,7 +151,7 @@ end
 
 -- varname -> string value
 M.ast["var"] = function(ast, values, templates)
-	print("DEBUG tmpl.ast.var():")
+	Dprint("DEBUG tmpl.ast.var():")
 	--print("  ast="..tprint(ast), type(ast))
 	--print("  values="..tprint(values), type(values))
 	--print("  templates="..tprint(templates), type(templates))
@@ -182,7 +183,7 @@ end
 
 -- varname -> list -> loop(list)
 M.ast["loop"] = function(ast, values, templates)
-	print("tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=true}))
+	Dprint("tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=true}))
 	local k = assert(ast[1])
 	local templatename = assert(ast[2])
 	local list = assert(values[k])
