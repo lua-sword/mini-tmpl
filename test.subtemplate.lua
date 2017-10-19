@@ -24,39 +24,68 @@ local Prep = function(x)
 	return prep( (x:gsub("[\t\n]","")) )
 end
 
-local peoples = prep[[!{1}, ]]
+local peoples = prep[[*!{1}*, ]]
 peoples.dynamic = function(n, total)
 	local last=total
 	if last-n == 1 then
-		return "last_last"
+		return "sub", "last_last"	-- => peoples.sub.last_last
 	end
 	if n == total then
-		return "last"
+		return nil, "last"		-- => peoples.last
+		--return false, "last"		-- => peoples.last
 	end
-	return "ok"
+	return 1				-- => peoples (the template itself, peoples[1])
+	--return "ok"				-- => peoples.ok
 end
 peoples.sub={}
-peoples.sub.ok=prep [[!{1}, ]]
+--peoples.sub.ok=prep [[!{1}, ]]
 peoples.sub.last_last=prep [[!{1} and ]]
-peoples.sub.last=prep [[!{1}]]
+--peoples.sub.last=prep [[!{1}]]
+
+--peoples.ok=prep [["!{1}", ]]
+--peoples.last_last=prep [["!{1}" and ]]
+peoples.last=prep [["!{1}"]]
+
 
 local templates = {}
 templates.peoples = peoples
---templates[1] = templates.peoples -- prep[[!{peoples>peoples}]]
-templates[""] = templates.peoples
+templates[1] = templates.peoples -- prep[[!{peoples>peoples}]]
+--templates[""] = templates.peoples
 
-
-local function hello(peoples, t)
-	local main = prep[[Hello !{1>peoples}!]]
-	if t then
+-- hello( [<template>], <peoples> )
+local function hello(t, peoples)
+	if peoples==nil then
+		peoples,t=t,nil
+	end
+	local main
+	if t==nil then
+		main = prep[[Hello !{1>peoples}!]]
+	else
 		main = prep(t)
 	end
 	return tmpl.render( main, {peoples}, templates)
 end
 
-print(hello({ {"foo"} }, [[Hellooo !{1>}!]]))
-print(hello{ {"foo"}, {"baz"} })
-print(hello{ {"foo"}, {"bar"}, {"buz"} })
-print(hello{ "foo", "bar", "buz", "bip" })
+--print( hello(	[[Hellooo !{1>}!]],	{ {"foo"} 			} ))
+--print( hello(				{ {"bar"}, {"foo"}		} ))
+--print( hello(				{ {"baz"}, {"bar"}, {"foo"}	} ))
+--print( hello(				{ "buz", "baz", "bar", "foo"	} ))
+print("----")
 
-
+local dbg = tmpl.debug
+dbg=nil
+local debugname = dbg and dbg.setname or function(n, t) return t end
+print(
+	tmpl.render(
+		debugname("main", prep[[_!{
+					1	 	 	 	  
+					 > 	 	 
+					  x 	 	 	 
+}_]]),
+		{
+			{"foo", "bar"},
+		}, {
+			x = debugname("x", prep[[!{1}, ]]),
+		}
+	)
+)

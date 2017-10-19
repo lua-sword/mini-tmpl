@@ -13,9 +13,9 @@ local tprint=require"tprint"
 -- also valid:
 --	!{}			=> substitute to empty string
 --	!{  }			=> substitute to empty string
--- invalid :
---	!{foo>}	!{ foo > }
---	!{>}	!{ > }
+-- implicite name :
+--	!{foo>}	!{ foo > }      equals to !{foo>1}
+--	!{>}	!{ > }          equals to !{1>1}
 -- TODO:
 --	!{a>b foo bar}		=> use extra "foo bar" parametter (like jinja ?)
 --	!{ a b c > d e f }	=> capturer plusieurs "mots" autour du '>' pour supporter un ou des prefixes
@@ -33,44 +33,57 @@ M._VERSION = "mini.tmpl 0.1.0"
 
 -- ######################################################################## --
 
+-- try to load the debug module
+local dbg = pcall(require, "tmpl.debug") and require "tmpl.debug"
+
 -- default marks
 M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
 M.closemark = '}'
 M.captureprefixpattern= "[%^%.]?"
-M.capturepattern = "[0-9a-zA-Z >_-]+"
+M.capturepattern = "[0-9a-zA-Z \t\r\n>_-]+" -- TODO: add tab ? add CR/LF ?
+M.astfield="tag"
+M.scopefield="scope"
 
 local static = function(x) return x end
-local var = function(varname, lookup) return {varname, tag="var", lookup=lookup} end
-local loop = function(varname, template_name) return {varname, template_name, tag="loop"} end
-
--- expose them
-M.static = static
-M.var = var
-M.loop = loop
+local var = function(varname, scope) return {varname, [M.astfield]="var", [M.scopefield]=scope} end
+local loop = function(varname, template_name) return {varname, template_name, [M.astfield]="loop"} end
 
 local function prepare(txt_tmpl, force)
 	assert(type(txt_tmpl)=="string", "invalid template type, must be a string")
-	local ast = {tag="template"}
+	local tag = M.astfield
+	local ast = {[tag]="template"}
 	local add = function(item) table.insert(ast, item) end
 	--local static, var, loop = static, var, loop
 
 	local trailing = string.gsub(txt_tmpl, "(.-)"..M.openmark.."("..M.captureprefixpattern..")("..M.capturepattern..")"..M.closemark, function(a,pv,v_t_x)
+		-- a: the textt before a !{} mark
+		-- pv: the first otionnal special char ('.' or '^')
+		-- v: the variable name
+		-- gt: the '>' separator
+		-- t: the template name
+		-- x: the xtra parametters
 		if a and a~="" then
 			add(static(a))
 		end
-		local lookup="local"
-		if pv == "." then lookup="meta"
-		elseif pv == "^" then lookup="global"
+		local scope="local"
+		if pv == "." then scope="meta"
+		elseif pv == "^" then scope="global"
 		end
-		local v,t,x
-		v_t_x = v_t_x:gsub("[ \t]+", " ")	-- replace multiples spaces to only one one space
-		if v_t_x:find(">", nil, true) then -- *>*
-			v,t,x = v_t_x:match("^ *([^ >]+) *> *([^ ]*) *(.*)$")
+		v_t_x = v_t_x:gsub("[\r\n]+",""):gsub("[ \t]+", " ")	-- replace multiples spaces to only one one space
+		local v,gt,t,x
+		if v_t_x:find(">", nil, true) then -- !{*>*}
+			v,gt,t,x = v_t_x:match("^ *([^ >]*) *(>) *([^ ]*) *(.*)$")
 			--assert(t~="", "template name is empty")
+			assert(gt==">")
 			assert(v)
---			if v and not t then
---				t=""  -- in case of !{var>}
---			end
+			assert(t)
+			-- support of !{ [varname|1] > [templatename|1] } 
+			if v=="" then -- when !{>templ} becomes equals to !{1>templ}
+				v=1
+			end
+			if t=="" then -- when !{var>}  becomes equals to !{var>1}
+				t=1
+			end
 			assert(x==nil or x=="", "xtra parameter are not implemented yet!")
 		else
 			v = v_t_x:match("^ *([^ ]+)")
@@ -83,7 +96,7 @@ local function prepare(txt_tmpl, force)
 			if t then
 				add(loop(v, t))
 			else
-				add(var(v, lookup))
+				add(var(v, scope))
 			end
 		end
 		return ""
@@ -99,7 +112,7 @@ M.prepare = prepare
 -- ########################################################################### --
 
 local function render(ast, values, templates)
-	if type(ast)=="string" then -- use native string instead of {tag="string", "foo"}
+	if type(ast)=="string" then -- use native string instead of {tag="string", "foo"} aka `String{"foo"}
 		return ast
 	end
 --print("DEBUG render:")
@@ -107,25 +120,26 @@ local function render(ast, values, templates)
 --print("  values="..tprint(values), type(values))
 --print("  templates="..tprint(templates), type(templates))
 
-	if type(ast)=="table" and type(ast.tag)=="string" then
-		local f = M.ast[ast.tag]
+	local tag = M.astfield
+	if type(ast)=="table" and type(ast[tag])=="string" then
+		local f = M.ast[ast[tag]]
 		if not f then
-			error("no handler for ast type "..ast.tag)
+			error("no handler for ast type "..ast[tag])
 		end
---print("render(): ["..ast.tag.."] f(ast, values, templates) :"..tprint({ast=ast, values=values, templates=templates,}, {inline=false}))
+--print("render(): ["..ast[tag].."] f(ast, values, templates) :"..tprint({ast=ast, values=values, templates=templates,}, {inline=false}))
 		return f(ast, values, templates)
 	end
 --print("DEBUG:", require"tprint"(ast))
-	error("ast invalid type, must be a table(template|var|loop) or a string, got "..type(ast).." type="..tostring(ast.tag))
+	error("ast invalid type, must be a table(template|var|loop) or a string, got "..type(ast).." type="..tostring(ast[tag]))
 end
 M.render=render
 
 M.ast = {}
 M.ast["template"] = function(ast, values, templates)
---	print("DEBUG tmpl.ast.template():")
+	print("DEBUG tmpl.ast.template():", dbg and dbg.getname(ast) or "")
 	local r = {}
 	for _i, v in ipairs(ast) do
-		if type(v)=="string" then -- use native string instead of {tag="string", "foo"}
+		if type(v)=="string" then -- use native string instead of `String{"foo"}
 			table.insert(r, v)
 		else
 			table.insert(r, render(v, values, templates))
@@ -136,28 +150,29 @@ end
 
 -- varname -> string value
 M.ast["var"] = function(ast, values, templates)
---	print("DEBUG tmpl.ast.var():")
+	print("DEBUG tmpl.ast.var():")
 	--print("  ast="..tprint(ast), type(ast))
 	--print("  values="..tprint(values), type(values))
 	--print("  templates="..tprint(templates), type(templates))
 	assert(ast[2]==nil)
 	assert(type(values)=="table", "tmpl.ast.var(): values must be a table")
 	local k = assert(ast[1])
-	local lookup = ast.lookup
+	local scope = ast[M.scopefield]
 	local v2
-	if lookup and values[lookup] then
-		v2 = values[lookup][k]
+	if scope and values[scope] then
+		v2 = values[scope][k]
 	else
 		v2 = values[k]
 	end
 
+	local tag = M.astfield
 	assert(v2, "no value found for "..tostring(k))
 	for _n=1,10 do -- while v3 is a template (max 10 recursions)
 		v2 = render(v2, values, templates)
 		if type(v2)~="table" then
 			break
 		end
-		if v2.tag~="template" then
+		if v2[tag]~="template" then
 			error("resolved is still not a valid value")
 		end
 	end
@@ -167,18 +182,19 @@ end
 
 -- varname -> list -> loop(list)
 M.ast["loop"] = function(ast, values, templates)
---	print("tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=true}))
+	print("tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=true}))
 	local k = assert(ast[1])
 	local templatename = assert(ast[2])
 	local list = assert(values[k])
 	local template = templates[templatename]
+	assert(type(template)=="table")
 	local dynamic = nil
-	local subtemplates = nil
+	local subtemplatesparent = nil
 --	print("type(template.dynamic)", type(template.dynamic), "type(template.sub)", type(template.sub))
-	if type(template.dynamic)=="function" and type(template.sub)=="table" then
+	if type(template.dynamic)=="function" then
 --		print("DEBUG: template.dynamic FOUND!")
 		dynamic = template.dynamic
-		subtemplates = template.sub
+		subtemplatesparent = template
 	end
 	--print("k=", k, "templatename=", templatename, "list=", tprint(list), "template=", tprint(template))
 	local r = {}
@@ -187,11 +203,17 @@ M.ast["loop"] = function(ast, values, templates)
 		-- TODO: dispatch function + sub templates
 
 		if dynamic then
-			local k = dynamic(i, #list)
-			assert(k)
---print("return k =", k)
-			if k and subtemplates[k] then
-				template = subtemplates[k]
+			local searchinto, name = dynamic(i, #list)
+			if name==nil and searchinto then -- compat: when only one argument is returned, consider that is name
+				name,searchinto = searchinto,"sub"
+			end
+			assert(name, "dynamic function must return 2 arguments, subtemplate name is missing")
+			local subtemplates = subtemplatesparent
+			if searchinto then -- if searchinto==false|nil search into the parent
+				subtemplates = subtemplatesparent[searchinto]
+			end
+			if subtemplates[name] then
+				template = subtemplates[name]
 			end
 --		else
 --			print("DEBUG: NO dynamic")
@@ -209,4 +231,13 @@ M.ast["loop"] = function(ast, values, templates)
 	return table.concat(r,"")
 end
 M.eolcontrol = function(...) return require"tmpl.eolcontrol"(...) end
+
+M.debug = dbg
+
+-- expose them (internaly not affected if overwritten)
+M.static = static
+M.var = var
+M.loop = loop
+
+
 return M
