@@ -37,13 +37,13 @@ function tprint(...)
 	end; return tprint(...)
 end
 local M = {}
-M._VERSION = "mini.tmpl 0.1.0"
+M._VERSION = "mini.tmpl 0.2.0"
 
 -- ######################################################################## --
 
 -- try to load the debug module
 local dbg = pcall(require, "tmpl.debug") and require "tmpl.debug"
-local Dprint;Dprint = function(...) if dbg and dbg.enabled then Dprint=print;Dprint(...);else print=function()end;end;end
+local Dprint;Dprint = function(...) if dbg and dbg.enabled then Dprint=print;Dprint(...);else Dprint=function()end;end;end
 
 -- default marks
 M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
@@ -124,14 +124,16 @@ M.prepare = prepare
 
 -- ########################################################################### --
 
-local function render(ast, values, templates)
+local function render(ast, values, templates, dynamicfield)
+	assert(dynamicfield, "missing dynamicfield")
+
 	if type(ast)=="string" then -- use native string instead of {tag="string", "foo"} aka `String{"foo"}
 		return ast
 	end
---print("DEBUG render:")
---print("  ast="..tprint(ast), type(ast))
---print("  values="..tprint(values), type(values))
---print("  templates="..tprint(templates), type(templates))
+--Dprint("DEBUG render:")
+--Dprint("  ast="..tprint(ast), type(ast))
+--Dprint("  values="..tprint(values), type(values))
+--Dprint("  templates="..tprint(templates), type(templates))
 
 	local tag = M.astfield
 	if type(ast)=="table" and type(ast[tag])=="string" then
@@ -139,34 +141,38 @@ local function render(ast, values, templates)
 		if not f then
 			error("no handler for ast type "..ast[tag])
 		end
---print("render(): ["..ast[tag].."] f(ast, values, templates) :"..tprint({ast=ast, values=values, templates=templates,}, {inline=false}))
-		return f(ast, values, templates)
+--Dprint("render(): ["..ast[tag].."] f(ast, values, templates) :"..tprint({ast=ast, values=values, templates=templates,}, {inline=false}))
+		return f(ast, values, templates, dynamicfield)
 	end
---print("DEBUG:", require"tprint"(ast))
+--Dprint("DEBUG:", require"tprint"(ast))
 	error("ast invalid type, must be a table(template|var|loop) or a string, got "..type(ast).." type="..tostring(ast[tag]))
 end
-M.render=render
+local function pub_render(ast, values, templates, dynamicfield)
+	if not dynamicfield then dynamicfield = M.dynamicfield end
+	return render(ast, values, templates, dynamicfield)
+end
+M.render=pub_render
 
 M.ast = {}
-M.ast["template"] = function(ast, values, templates)
+M.ast["template"] = function(ast, values, templates, dynamicfield)
 	Dprint("DEBUG tmpl.ast.template():", dbg and dbg.getname(ast) or "")
 	local r = {}
 	for _i, v in ipairs(ast) do
 		if type(v)=="string" then -- use native string instead of `String{"foo"}
 			table.insert(r, v)
 		else
-			table.insert(r, render(v, values, templates))
+			table.insert(r, render(v, values, templates, dynamicfield))
 		end
 	end
 	return table.concat(r,"")
 end
 
 -- varname -> string value
-M.ast["var"] = function(ast, values, templates)
+M.ast["var"] = function(ast, values, templates, dynamicfield)
 	Dprint("DEBUG tmpl.ast.var():")
-	--print("  ast="..tprint(ast), type(ast))
-	--print("  values="..tprint(values), type(values))
-	--print("  templates="..tprint(templates), type(templates))
+	--Dprint("  ast="..tprint(ast), type(ast))
+	--Dprint("  values="..tprint(values), type(values))
+	--Dprint("  templates="..tprint(templates), type(templates))
 	assert(ast[2]==nil)
 	assert(type(values)=="table", "tmpl.ast.var(): values must be a table")
 	local k = assert(ast[1])
@@ -181,7 +187,7 @@ M.ast["var"] = function(ast, values, templates)
 	local tag = M.astfield
 	assert(v2, "no value found for "..tostring(k))
 	for _n=1,10 do -- while v3 is a template (max 10 recursions)
-		v2 = render(v2, values, templates)
+		v2 = render(v2, values, templates, dynamicfield)
 		if type(v2)~="table" then
 			break
 		end
@@ -195,7 +201,7 @@ end
 
 -- varname -> list -> loop(list)
 M.ast["loop"] = function(ast, values, templates, dynamicfield)
-	if not dynamicfield then dynamicfield = M.dynamicfield end
+	assert(dynamicfield, "missing dynamicfield")
 	Dprint("DEBUG tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=false}))
 	local k = assert(ast[1])
 	local templatename = assert(ast[2])
@@ -211,12 +217,11 @@ M.ast["loop"] = function(ast, values, templates, dynamicfield)
 	local dynamic = nil
 	local subtemplatesparent = nil
 	if type(template[dynamicfield])=="function" then
-		print("DEBUG: template[dynamicfield] FOUND!")
+		Dprint("DEBUG: template[dynamicfield] FOUND!")
 		dynamic = template[dynamicfield]
 		subtemplatesparent = template
 		assert(type(subtemplatesparent)=="table")
 	end
-	--print("k=", k, "templatename=", templatename, "list=", tprint(list), "template=", tprint(template))
 	local r = {}
 	for i,item in ipairs(list) do
 		-- dispatch function + sub templates
@@ -238,17 +243,17 @@ M.ast["loop"] = function(ast, values, templates, dynamicfield)
 				template = subtemplates[name]
 			end
 		else
-			print("DEBUG: NO dynamic")
+			Dprint("DEBUG: NO dynamic")
 		end
 		local item2=item
 		if type(item)=="string" then
-			--print("convert item from", item)
+			--Dprint("convert item from", item)
 			item2={item,i=tostring(i)}
-			--print("to", tprint(item))
+			--Dprint("to", tprint(item))
 		end
 		local values2 = {["meta"]={i=tostring(i)}, ["local"]=item2, ["global"]=values,}
 
-		table.insert(r, render(template, values2, templates)) -- fallback value item => setmetatable(item, {__index=values})
+		table.insert(r, render(template, values2, templates, dynamicfield)) -- fallback value item => setmetatable(item, {__index=values})
 	end
 	return table.concat(r,"")
 end

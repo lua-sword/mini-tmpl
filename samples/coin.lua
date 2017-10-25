@@ -14,3 +14,5 @@ local b = tmpl.render( COIN,
 }, COINCOIN)
 
 io.stdout:write(b)
+assert(b=="- Coin\n- Coin Coin\n- PAN! PAN!\n")
+print("ok")

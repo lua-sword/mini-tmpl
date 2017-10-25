@@ -18,3 +18,5 @@ local templates={t_item=t_item}
 
 local b = tmpl.render(t_items, data, templates)
 io.stdout:write(b)
+assert(b=="- line 1\n- line 2\n- line 3\n")
+print("ok")

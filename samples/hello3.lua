@@ -14,4 +14,7 @@ local data = {
 local subtemplates = {
 	peoples = temp_peoples,
 }
-print( tmpl.render(temp_main, data, subtemplates) )
+local b = tmpl.render(temp_main, data, subtemplates)
+print(b)
+assert(b=="hello \n - John Smith\n - foo bar.\nNice to meet you!")
+print("ok")

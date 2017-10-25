@@ -36,3 +36,5 @@ dbg.enabled = true
 ]]--
 local b = tmpl.render(main, data, templates)
 io.stdout:write(b)
+assert(b=="- line 1,\n- line 2,\n- line 3.\n")
+print("ok")
