@@ -1,5 +1,4 @@
 
-local tprint=require"tprint"
 -- Syntax: '!{' [<spaces>] [<var>] [<spaces>] [ '>' [<spaces>] <template> [<spaces> <ignored>] ]] '}'
 -- pour avoir
 --	!{>tmpl1}
@@ -16,6 +15,7 @@ local tprint=require"tprint"
 -- implicite name :
 --	!{foo>}	!{ foo > }      equals to !{foo>1}
 --	!{>}	!{ > }          equals to !{1>1}
+--	!{1>}	!{>1}		equals to !{1>1}
 -- TODO:
 --	!{a>b foo bar}		=> use extra "foo bar" parametter (like jinja ?)
 --	!{ a b c > d e f }	=> capturer plusieurs "mots" autour du '>' pour supporter un ou des prefixes
@@ -28,6 +28,14 @@ local tprint=require"tprint"
 --	!{1}	=> t[1]		=> ok
 --	!{one}	=> t["one"]	=> ok
 
+local tprint
+function tprint(...)
+	if not pcall(
+		function() tprint=require"tprint" end
+	) then
+		tprint=function() return "" end
+	end; return tprint(...)
+end
 local M = {}
 M._VERSION = "mini.tmpl 0.1.0"
 
@@ -35,15 +43,16 @@ M._VERSION = "mini.tmpl 0.1.0"
 
 -- try to load the debug module
 local dbg = pcall(require, "tmpl.debug") and require "tmpl.debug"
-local Dprint = false and print or function()end
+local Dprint;Dprint = function(...) if dbg and dbg.enabled then Dprint=print;Dprint(...);else print=function()end;end;end
 
 -- default marks
 M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
 M.closemark = '}'
 M.captureprefixpattern= "[%^%.]?"
-M.capturepattern = "[0-9a-zA-Z \t\r\n>_-]+" -- TODO: add tab ? add CR/LF ?
+M.capturepattern = "[0-9a-zA-Z \t\r\n>_-]+" -- alphanum, spaces, '_', '-' and '>'
 M.astfield="tag"
 M.scopefield="scope"
+M.dynamicfield="dynamic"
 
 local static = function(x) return x end
 local var = function(varname, scope) return {varname, [M.astfield]="var", [M.scopefield]=scope} end
@@ -80,10 +89,10 @@ local function prepare(txt_tmpl, force)
 			assert(t)
 			-- support of !{ [varname|1] > [templatename|1] } 
 			if v=="" then -- when !{>templ} becomes equals to !{1>templ}
-				v=1
+				v="1"
 			end
 			if t=="" then -- when !{var>}  becomes equals to !{var>1}
-				t=1
+				t="1"
 			end
 			assert(x==nil or x=="", "xtra parameter are not implemented yet!")
 		else
@@ -95,6 +104,9 @@ local function prepare(txt_tmpl, force)
 				v = assert(tonumber(v, 10), "fail to convert base10 number")
 			end
 			if t then
+--				if t:find("^[0-9]+$") then -- is a base10 number
+--					t = assert(tonumber(t, 10), "fail to convert base10 number")
+--				end
 				add(loop(v, t))
 			else
 				add(var(v, scope))
@@ -182,42 +194,51 @@ M.ast["var"] = function(ast, values, templates)
 end
 
 -- varname -> list -> loop(list)
-M.ast["loop"] = function(ast, values, templates)
-	Dprint("tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=true}))
+M.ast["loop"] = function(ast, values, templates, dynamicfield)
+	if not dynamicfield then dynamicfield = M.dynamicfield end
+	Dprint("DEBUG tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=false}))
 	local k = assert(ast[1])
 	local templatename = assert(ast[2])
+	assert( templatename and templatename~="" )
+	if type(templatename)=="string" and templatename:find("^[0-9]+$") then -- is a base10 number
+--		Dprint("convert templatename from string to number")
+		templatename = assert(tonumber(templatename, 10), "fail to convert base10 number")
+	end
+
 	local list = assert(values[k])
 	local template = templates[templatename]
 	assert(type(template)=="table")
 	local dynamic = nil
 	local subtemplatesparent = nil
---	print("type(template.dynamic)", type(template.dynamic), "type(template.sub)", type(template.sub))
-	if type(template.dynamic)=="function" then
---		print("DEBUG: template.dynamic FOUND!")
-		dynamic = template.dynamic
+	if type(template[dynamicfield])=="function" then
+		print("DEBUG: template[dynamicfield] FOUND!")
+		dynamic = template[dynamicfield]
 		subtemplatesparent = template
+		assert(type(subtemplatesparent)=="table")
 	end
 	--print("k=", k, "templatename=", templatename, "list=", tprint(list), "template=", tprint(template))
 	local r = {}
 	for i,item in ipairs(list) do
-		--print( render(template, item, templates))
-		-- TODO: dispatch function + sub templates
-
+		-- dispatch function + sub templates
 		if dynamic then
 			local searchinto, name = dynamic(i, #list)
 			if name==nil and searchinto then -- compat: when only one argument is returned, consider that is name
-				name,searchinto = searchinto,"sub"
+				name,searchinto = searchinto,nil
 			end
 			assert(name, "dynamic function must return 2 arguments, subtemplate name is missing")
 			local subtemplates = subtemplatesparent
 			if searchinto then -- if searchinto==false|nil search into the parent
+				assert(type(searchinto)=="string" or type(searchinto)=="number")
+				--Dprint("searchinto=", searchinto)
+				assert(type(subtemplatesparent[searchinto])=="table", "subtemplatesparent[searchinto] must be a table, found: "..type(subtemplatesparent[searchinto]))
 				subtemplates = subtemplatesparent[searchinto]
 			end
+			assert(type(subtemplates)=="table")
 			if subtemplates[name] then
 				template = subtemplates[name]
 			end
---		else
---			print("DEBUG: NO dynamic")
+		else
+			print("DEBUG: NO dynamic")
 		end
 		local item2=item
 		if type(item)=="string" then

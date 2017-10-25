@@ -8,4 +8,5 @@ end
 function dbg.getname(ast)
 	return ast[dbg.name_field] or "?"
 end
+dbg.enabled = nil
 return dbg

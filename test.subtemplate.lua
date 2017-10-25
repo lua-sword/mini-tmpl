@@ -26,14 +26,18 @@ end
 
 local peoples = prep[[*!{1}*, ]]
 peoples.dynamic = function(n, total)
+--print("DYN", n, total)
 	local last=total
 	if last-n == 1 then
+--print("DYN", n, total, "returns", "sub/last_last")
 		return "sub", "last_last"	-- => peoples.sub.last_last
 	end
 	if n == total then
+--print("DYN", n, total, "returns", "nil/last")
 		return nil, "last"		-- => peoples.last
 		--return false, "last"		-- => peoples.last
 	end
+--print("DYN", n, total, "returns", "1")
 	return 1				-- => peoples (the template itself, peoples[1])
 	--return "ok"				-- => peoples.ok
 end
@@ -48,9 +52,8 @@ peoples.last=prep [["!{1}"]]
 
 
 local templates = {}
-templates.peoples = peoples
-templates[1] = templates.peoples -- prep[[!{peoples>peoples}]]
---templates[""] = templates.peoples
+templates.peoples = peoples		-- for !{peoples>peoples}
+templates[1] = peoples			-- for !{peoples>1} or !{peoples>}
 
 -- hello( [<template>], <peoples> )
 local function hello(t, peoples)
@@ -66,11 +69,20 @@ local function hello(t, peoples)
 	return tmpl.render( main, {peoples}, templates)
 end
 
---print( hello(	[[Hellooo !{1>}!]],	{ {"foo"} 			} ))
---print( hello(				{ {"bar"}, {"foo"}		} ))
---print( hello(				{ {"baz"}, {"bar"}, {"foo"}	} ))
---print( hello(				{ "buz", "baz", "bar", "foo"	} ))
+print( hello(	[[Hellooo !{1>peoples}!]],	{ {"foo"} 			} ))
+print( hello(				{ {"bar"}, {"foo"}		} ))
+print( hello(				{ {"baz"}, {"bar"}, {"foo"}	} ))
+templates.peoples=nil
+print( hello(	[[Hi !{1>1}!]],			{ "buz", "baz", "bar", "foo"	} ))
+print( hello(	[[Hi !{1>}!]],			{ "buz", "baz", "bar", "foo"	} ))
+print( hello(   [[Hi !{>1}!]],                   { "buz", "baz", "bar", "foo"    } ))
+print( hello(   [[Hi !{>}!]],                   { "buz", "baz", "bar", "foo"    } ))
+templates[0]=templates[1]
+templates[1]=nil
+print( hello(   [[Hi !{>0}!]],                   { "buz", "baz", "bar", "foo"    } ))
+-- !{ COIN >o_/ }
 print("----")
+--print( hello(	[[Hello11 !{1>1}!]], {{ "f00" }} ))
 
 local dbg = tmpl.debug
 dbg=nil
