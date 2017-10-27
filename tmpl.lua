@@ -49,7 +49,10 @@ local Dprint;Dprint = function(...) if dbg and dbg.enabled then Dprint=print;Dpr
 M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
 M.closemark = '}'
 M.captureprefixpattern= "[%^%.]?"
-M.capturepattern = "[0-9a-zA-Z \t\r\n>_-]+" -- alphanum, spaces, '_', '-' and '>'
+M.captureignoredspaces = " \t\r\n"
+--M.capturepattern = "[0-9a-zA-Z \t\r\n>|_-]+" -- alphanum, spaces, '_', '-' and '>'
+M.captureletter = "0-9a-zA-Z_-"
+M.capturepattern = "["..M.captureignoredspaces..">|"..M.captureletter.."]+"
 M.astfield="tag"
 M.scopefield="scope"
 M.dynamicfield="dynamic"
@@ -65,7 +68,11 @@ local function prepare(txt_tmpl, force)
 	local add = function(item) table.insert(ast, item) end
 	--local static, var, loop = static, var, loop
 
-	local trailing = string.gsub(txt_tmpl, "(.-)"..M.openmark.."("..M.captureprefixpattern..")("..M.capturepattern..")"..M.closemark, function(a,pv,v_t_x)
+--	local pat = "(.-)"..M.openmark.."["..M.captureignoredspaces.."]*("..M.captureprefixpattern..")("..M.capturepattern..")"..M.closemark
+--	local trailing = string.gsub(txt_tmpl, pat, function(a,pv,v_t_x)
+	local pat = "(.-)"..M.openmark.."["..M.captureignoredspaces.."]*("..M.captureprefixpattern..")("..M.capturepattern..")"..M.closemark
+	local trailing = string.gsub(txt_tmpl, pat, function(a,pv,cap)
+
 		-- a: the textt before a !{} mark
 		-- pv: the first otionnal special char ('.' or '^')
 		-- v: the variable name
@@ -75,35 +82,89 @@ local function prepare(txt_tmpl, force)
 		if a and a~="" then
 			add(static(a))
 		end
+		-- Syntax: [[prefix]var] ['|' func [ign-suffix]] '>' [temp [ign-suffix]]
+		--         ^^^l_ppart^^^      ^r_ppart^^^^^^^^^^
+		--         ^^^^^^^^^^^^^l_gtpart^^^^^^^^^^^^^^^^     ^^^r_gtpart^^^^^^^^
+
+		--local cap = pv..v_t_x
+		--cap = cap:gsub("[\r\n]+",""):gsub("[ \t]+", " ")
+		--cap = cap:gsub("["..M.captureignoredspaces.."]+", " ")
+
+		local use_func, use_template = false,false
+
+		local l_gtpart, r_gtpart = cap:match("^([^>]*)>(.*)$")
+		if not l_gtpart then
+			l_gtpart = cap
+		else
+			use_template = true
+		end
+		local l_ppart, r_ppart = l_gtpart:match("^([^|]*)|(.*)$")
+		if not l_ppart then
+			l_ppart = l_gtpart
+		else
+			use_func = true
+		end
+
+		local v,f,t
+		if l_ppart and l_ppart ~= "" then
+			v = l_ppart:match("^(%S+)")
+		end
+		if r_ppart and r_ppart ~= "" then
+			f = r_ppart:match("^(%S+)")
+		end
+		if r_gtpart and r_gtpart ~= ""then
+			t = r_gtpart:match("^(%S+)")
+		end
+
+		if (not v or v == "") and (use_func or use_template ) then
+			v="1"
+		end
+		if use_func and (not f or f=="")then
+			f="1"
+		end
+		if use_template and (not t or t=="")then
+			t="1"
+		end
+
 		local scope="local"
 		if pv == "." then scope="meta"
 		elseif pv == "^" then scope="global"
 		end
-		v_t_x = v_t_x:gsub("[\r\n]+",""):gsub("[ \t]+", " ")	-- replace multiples spaces to only one one space
-		local v,gt,t,x
-		if v_t_x:find(">", nil, true) then -- !{*>*}
-			v,gt,t,x = v_t_x:match("^ *([^ >]*) *(>) *([^ ]*) *(.*)$")
-			--assert(t~="", "template name is empty")
-			assert(gt==">")
-			assert(v)
-			assert(t)
-			-- support of !{ [varname|1] > [templatename|1] } 
-			if v=="" then -- when !{>templ} becomes equals to !{1>templ}
-				v="1"
-			end
-			if t=="" then -- when !{var>}  becomes equals to !{var>1}
-				t="1"
-			end
-			assert(x==nil or x=="", "xtra parameter are not implemented yet!")
-		else
-			v = v_t_x:match("^ *([^ ]+)")
-		end
+
+--		print("scope", scope)
+--		print("var",    v)
+--		print("func",   f)
+--		print("templ",  t)
+--		print("use_func", use_func, "use_template", use_template)
+
+
+--		v_t_x = v_t_x:gsub("[\r\n]+",""):gsub("[ \t]+", " ")	-- replace multiples spaces to only one one space
+--		local v,gt,t,x
+--		if v_t_x:find(">", nil, true) then -- !{*>*}
+--			v,gt,t,x = v_t_x:match("^ *([^ >]*) *(>) *([^ ]*) *(.*)$")
+--			--assert(t~="", "template name is empty")
+--			assert(gt==">")
+--			assert(v)
+--			assert(t)
+--			-- support of !{ [varname|1] > [templatename|1] }
+--			if v=="" then -- when !{>templ} becomes equals to !{1>templ}
+--				v="1"
+--			end
+--			if t=="" then -- when !{var>}  becomes equals to !{var>1}
+--				t="1"
+--			end
+--			assert(x==nil or x=="", "xtra parameter are not implemented yet!")
+--		else
+--			v = v_t_x:match("^ *([^ ]+)")
+--		end
+
 		-- avoid !{} or !{<spaces>} cases
 		if v and v~= "" then
 			if v:find("^[0-9]+$") then -- is a base10 number
 				v = assert(tonumber(v, 10), "fail to convert base10 number")
 			end
 			if t then
+-- do no convert on prepare, convert it on render
 --				if t:find("^[0-9]+$") then -- is a base10 number
 --					t = assert(tonumber(t, 10), "fail to convert base10 number")
 --				end
@@ -257,6 +318,13 @@ M.ast["loop"] = function(ast, values, templates, dynamicfield)
 	end
 	return table.concat(r,"")
 end
+-- function(templates, values, functions, config)
+-- args = { templates, values, functions, {dynamicfield="DYN", main=1})
+M.ast["Convert"] = function(ast, values, templates, dynamicfield) -- +functions
+
+	
+end
+
 M.eolcontrol = function(...) return require"tmpl.eolcontrol"(...) end
 
 M.debug = dbg
