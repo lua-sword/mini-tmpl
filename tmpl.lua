@@ -1,33 +1,4 @@
 
--- Syntax: '!{' [<spaces>] [<var>] [<spaces>] [ '>' [<spaces>] <template> [<spaces> <ignored>] ]] '}'
--- pour avoir
---	!{>tmpl1}
---	!{var1}
---	!{var1>tmpl1}
---	!{ var1 > tmpl1 } avec des espaces qui seront ignorés
---
---	!{  var1 }	equivalent au futur !{ local var1 }  tout est local par defaut
---	!{ .var1 }      equivalent au futur !{ meta  var1 }
---	!{ ^var1 }	equivalent au futur !{ global var1 }
--- also valid:
---	!{}			=> substitute to empty string
---	!{  }			=> substitute to empty string
--- implicite name :
---	!{foo>}	!{ foo > }      equals to !{foo>1}
---	!{>}	!{ > }          equals to !{1>1}
---	!{1>}	!{>1}		equals to !{1>1}
--- TODO:
---	!{a>b foo bar}		=> use extra "foo bar" parametter (like jinja ?)
---	!{ a b c > d e f }	=> capturer plusieurs "mots" autour du '>' pour supporter un ou des prefixes
---
---	!{ tab1.tab2.var1 }	=> walk into tables ?
-
--- Limitations:
---  can not access a value by a number key as string
---		   t["1"]	=> not supported
---	!{1}	=> t[1]		=> ok
---	!{one}	=> t["one"]	=> ok
-
 local tprint
 function tprint(...)
 	if not pcall(
@@ -37,22 +8,18 @@ function tprint(...)
 	end; return tprint(...)
 end
 local M = {}
-M._VERSION = "mini.tmpl 0.2.0"
+M._VERSION = "mini.tmpl 0.3.0"
 
 -- ######################################################################## --
-
--- try to load the debug module
-local dbg = pcall(require, "mini.tmpl.debug") and require "mini.tmpl.debug"
-local Dprint;Dprint = function(...) if dbg and dbg.enabled then Dprint=print;Dprint(...);else Dprint=function()end;end;end
 
 -- default marks
 M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
 M.closemark = '}'
 M.captureprefixpattern= "[%^%.]?"
 M.captureignoredspaces = " \t\r\n"
---M.capturepattern = "[0-9a-zA-Z \t\r\n>|_-]+" -- alphanum, spaces, '_', '-', '|', '>'
 M.captureletter = "0-9a-zA-Z_-"
-M.capturepattern = "["..M.captureignoredspaces..">|"..M.captureletter.."]+"
+M.special = ">|"
+M.capturepattern = "["..M.captureignoredspaces..M.special..M.captureletter.."]+"
 M.astfield="tag"
 M.scopefield="scope"
 M.dynamicfield="dynamic"
@@ -60,62 +27,77 @@ M.dynamicfield="dynamic"
 local static = function(x) return x end
 local var = function(varname, scope) return {varname, [M.astfield]="var", [M.scopefield]=scope} end
 local loop = function(varname, template_name) return {varname, template_name, [M.astfield]="loop"} end
+local include = function(template_name) return {template_name, [M.astfield]="include"} end
+
+local function splitmarkcontent(data)
+	local function trim(s)
+		return s:match("^%s*(.*%S)" or "")
+	end
+	local insert = table.insert
+	local result = {}
+	local trailing = data:gsub("([^"..M.special.."]+)(["..M.special.."])", function(a,b)
+		insert(result, trim(a))
+		insert(result, b)
+		return ""
+	end)
+	insert(result, trim(trailing))
+	return result
+end
 
 local function prepare(txt_tmpl, force)
 	assert(type(txt_tmpl)=="string", "invalid template type, must be a string")
 	local tag = M.astfield
 	local ast = {[tag]="template"}
 	local add = function(item) table.insert(ast, item) end
-	--local static, var, loop = static, var, loop
 
-	local pat = "(.-)"..M.openmark.."["..M.captureignoredspaces.."]*("..M.captureprefixpattern..")("..M.capturepattern..")"..M.closemark
---	local trailing = string.gsub(txt_tmpl, pat, function(a,pv,v_t_x)
-	local trailing = string.gsub(txt_tmpl, pat, function(a,pv,cap)
+	--local pat = "(.-)"..M.openmark.."["..M.captureignoredspaces.."]*("..M.captureprefixpattern..")("..M.capturepattern..")"..M.closemark
+	--local pat = "(.-)"..M.openmark.."(" .. "[^}]*" .. ")".. M.closemark
+	local pat = "(.-)"..M.openmark.."(.-)".. M.closemark
 
-		-- a: the text before a !{} mark
-		-- pv: the first otionnal special char ('.' or '^')
-		-- v: the variable name
-		-- gt: the '>' separator
-		-- t: the template name
-		-- x: the xtra parametters
-		if a and a~="" then
-			add(static(a))
+	local trailing = string.gsub(txt_tmpl, pat, function(pre,value)
+		-- pre: the text before a !{...} mark
+		-- value: the value inside the mark
+
+		if pre and pre~="" then
+			add(static(pre))
 		end
+
 		-- Syntax: [[prefix]var] ['|' func [ign-suffix]] '>' [temp [ign-suffix]]
 		--         ^^^l_ppart^^^      ^r_ppart^^^^^^^^^^
 		--         ^^^^^^^^^^^^^l_gtpart^^^^^^^^^^^^^^^^     ^^^r_gtpart^^^^^^^^
 
-		--local cap = pv..v_t_x
-		--cap = cap:gsub("[\r\n]+",""):gsub("[ \t]+", " ")
-		--cap = cap:gsub("["..M.captureignoredspaces.."]+", " ")
-
 		local use_func, use_template = false,false
+		local items = splitmarkcontent(value)
 
-		local l_gtpart, r_gtpart = cap:match("^([^>]*)>(.*)$")
-		if not l_gtpart then
-			l_gtpart = cap
-		else
-			use_template = true
+		local function isTemplate(x)
+			return x == ">"
 		end
-		local l_ppart, r_ppart = l_gtpart:match("^([^|]*)|(.*)$")
-		if not l_ppart then
-			l_ppart = l_gtpart
-		else
-			use_func = true
+		local function isFunc(x)
+			return x == "|"
 		end
 
 		local v,f,t
-		if l_ppart and l_ppart ~= "" then
-			v = l_ppart:match("^(%S+)")
-		end
-		if r_ppart and r_ppart ~= "" then
-			f = r_ppart:match("^(%S+)")
-		end
-		if r_gtpart and r_gtpart ~= ""then
-			t = r_gtpart:match("^(%S+)")
+
+		local pos = 1
+		local function shift() pos=pos+1 end
+		local function get() return items[pos] end
+
+		while pos <= #items do
+			if isTemplate(get()) then
+				use_template = true;	shift()
+				t = get(); 		shift()
+			elseif isFunc(get()) then
+				use_func = true;	shift()
+				f = get();		shift()
+			else
+				if v then
+					error("varname already exists!")
+				end
+				v = get();		shift()
+			end
 		end
 
-		if (not v or v == "") and (use_func or use_template ) then
+		if (not v or v == "") and (use_func) then -- or use_template ?
 			v="1" -- default value
 		end
 		if use_func and (not f or f=="")then
@@ -125,17 +107,17 @@ local function prepare(txt_tmpl, force)
 			t="1"
 		end
 
+		local pv=v and v:sub(1,1)
 		local scope="local"
-		if pv == "." then scope="meta"
-		elseif pv == "^" then scope="global"
+		if pv and pv == "." then scope="meta" v=v:sub(2) -- trim?  ". varname" --> "varname"
+		elseif pv and pv == "^" then scope="global" v=v:sub(2) -- trim? "^ varname" -> "varname"
 		end
 
---		print("scope", scope)
---		print("var",    v)
---		print("func",   f)
---		print("templ",  t)
---		print("use_func", use_func, "use_template", use_template)
-
+		--print("scope", scope)
+		--print("var",    v)
+		--print("func",   f)
+		--print("templ",  t)
+		--print("use_func", use_func, "use_template", use_template)
 
 --		v_t_x = v_t_x:gsub("[\r\n]+",""):gsub("[ \t]+", " ")	-- replace multiples spaces to only one one space
 --		local v,gt,t,x
@@ -171,6 +153,8 @@ local function prepare(txt_tmpl, force)
 			else
 				add(var(v, scope))
 			end
+		elseif t then
+			add(include(t))
 		end
 		return ""
 	end)
@@ -219,7 +203,7 @@ M.render=pub_render
 
 M.ast = {}
 M.ast["template"] = function(ast, values, templates, dynamicfield)
-	Dprint("DEBUG tmpl.ast.template():", dbg and dbg.getname(ast) or "")
+	--Dprint("DEBUG tmpl.ast.template():", dbg and dbg.getname(ast) or "")
 	local r = {}
 	for _i, v in ipairs(ast) do
 		if type(v)=="string" then -- use native string instead of `String{"foo"}
@@ -231,9 +215,14 @@ M.ast["template"] = function(ast, values, templates, dynamicfield)
 	return table.concat(r,"")
 end
 
+M.ast["include"] = function(ast, values, templates, dynamicfield)
+	-- FIXME IMPROVEME !
+	return templates[ast[1]][1]
+end
+
 -- varname -> string value
 M.ast["var"] = function(ast, values, templates, dynamicfield)
-	Dprint("DEBUG tmpl.ast.var():")
+	--Dprint("DEBUG tmpl.ast.var():")
 	--Dprint("  ast="..tprint(ast), type(ast))
 	--Dprint("  values="..tprint(values), type(values))
 	--Dprint("  templates="..tprint(templates), type(templates))
@@ -268,7 +257,7 @@ end
 -- varname -> list -> loop(list)
 M.ast["loop"] = function(ast, values, templates, dynamicfield)
 	assert(dynamicfield, "missing dynamicfield")
-	Dprint("DEBUG tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=false}))
+	--Dprint("DEBUG tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=false}))
 	local k = assert(ast[1])
 	local templatename = assert(ast[2])
 	assert( templatename and templatename~="" )
@@ -286,7 +275,7 @@ M.ast["loop"] = function(ast, values, templates, dynamicfield)
 	local dynamic = nil
 	local subtemplatesparent = nil
 	if type(template[dynamicfield])=="function" then
-		Dprint("DEBUG: template[dynamicfield] FOUND!")
+		--Dprint("DEBUG: template[dynamicfield] FOUND!")
 		dynamic = template[dynamicfield]
 		subtemplatesparent = template
 		assert(type(subtemplatesparent)=="table")
@@ -312,7 +301,7 @@ M.ast["loop"] = function(ast, values, templates, dynamicfield)
 				template = subtemplates[name]
 			end
 		else
-			Dprint("DEBUG: NO dynamic")
+			--Dprint("DEBUG: NO dynamic")
 		end
 		local item2=item
 		if type(item)=="string" then
@@ -344,21 +333,46 @@ M.var = var
 M.loop = loop
 
 return M
---[[
 
-!{ ... }
+-- Syntax : '!{'  [<spaces>] ( [special] [value] )* '}'
+-- special: '|' or '>'
+-- value  : everything except special
+--
+-- !{ varname }
+-- !{ varname | funcname }
+-- !{ varname > templatename }
+-- !{ varname | funcname > templatename }
+-- !{ varname | funcname1 | funcname2 > templatename }
+--
+-- !{ "var name"  | "func name" > "temp late name" } TODO: supporte quote to allow space in name ?
 
-	[^] varname (uplevel)
-	[`] varname (meta)
-	    varname		1 ; abc ; foo.bar ; buz[*] ?
-	 |  funcname
-	 >  templatename
+-- Syntax: '!{' [<spaces>] [<var>] [<spaces>] [ '>' [<spaces>] <template> [<spaces> <ignored>] ]] '}'
+-- pour avoir
+--	!{>tmpl1}
+--	!{var1}
+--	!{var1>tmpl1}
+--	!{ var1 > tmpl1 } avec des espaces qui seront ignorés
+--
+--	!{  var1 }	equivalent au futur !{ local var1 }  tout est local par defaut
+--	!{ .var1 }      equivalent au futur !{ meta  var1 }
+--	!{ ^var1 }	equivalent au futur !{ global var1 }
+-- also valid:
+--	!{}			=> substitute to empty string
+--	!{  }			=> substitute to empty string
+-- implicite name :
+--	!{foo>}	!{ foo > }      equals to !{foo>1}
+--	!{>}	!{ > }          equals to !{1>1}
+--	!{1>}	!{>1}		equals to !{1>1}
+-- TODO:
+--	!{a>b foo bar}		=> use extra "foo bar" parametter (like jinja ?)
+--	!{ a b c > d e f }	=> capturer plusieurs "mots" autour du '>' pour supporter un ou des prefixes
+--
+--	!{ tab1.tab2.var1 }	=> walk into tables ?
 
-	vvv | fff > ttt
-	gsub("(.+)([|>])", function(a,b)
-		table.insert(result, a) -- trim(a)
-		table.insert(result, b)
-	end)
-	table.insert(result, trailing)
+-- Limitations:
+--  can not access a value by a number key as string
+--		   t["1"]	=> not supported
+--	!{1}	=> t[1]		=> ok
+--	!{one}	=> t["one"]	=> ok
 
-]]--
+
