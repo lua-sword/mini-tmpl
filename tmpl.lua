@@ -42,7 +42,7 @@ M._VERSION = "mini.tmpl 0.2.0"
 -- ######################################################################## --
 
 -- try to load the debug module
-local dbg = pcall(require, "tmpl.debug") and require "tmpl.debug"
+local dbg = pcall(require, "mini.tmpl.debug") and require "mini.tmpl.debug"
 local Dprint;Dprint = function(...) if dbg and dbg.enabled then Dprint=print;Dprint(...);else Dprint=function()end;end;end
 
 -- default marks
@@ -50,7 +50,7 @@ M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
 M.closemark = '}'
 M.captureprefixpattern= "[%^%.]?"
 M.captureignoredspaces = " \t\r\n"
---M.capturepattern = "[0-9a-zA-Z \t\r\n>|_-]+" -- alphanum, spaces, '_', '-' and '>'
+--M.capturepattern = "[0-9a-zA-Z \t\r\n>|_-]+" -- alphanum, spaces, '_', '-', '|', '>'
 M.captureletter = "0-9a-zA-Z_-"
 M.capturepattern = "["..M.captureignoredspaces..">|"..M.captureletter.."]+"
 M.astfield="tag"
@@ -68,12 +68,11 @@ local function prepare(txt_tmpl, force)
 	local add = function(item) table.insert(ast, item) end
 	--local static, var, loop = static, var, loop
 
---	local pat = "(.-)"..M.openmark.."["..M.captureignoredspaces.."]*("..M.captureprefixpattern..")("..M.capturepattern..")"..M.closemark
---	local trailing = string.gsub(txt_tmpl, pat, function(a,pv,v_t_x)
 	local pat = "(.-)"..M.openmark.."["..M.captureignoredspaces.."]*("..M.captureprefixpattern..")("..M.capturepattern..")"..M.closemark
+--	local trailing = string.gsub(txt_tmpl, pat, function(a,pv,v_t_x)
 	local trailing = string.gsub(txt_tmpl, pat, function(a,pv,cap)
 
-		-- a: the textt before a !{} mark
+		-- a: the text before a !{} mark
 		-- pv: the first otionnal special char ('.' or '^')
 		-- v: the variable name
 		-- gt: the '>' separator
@@ -117,7 +116,7 @@ local function prepare(txt_tmpl, force)
 		end
 
 		if (not v or v == "") and (use_func or use_template ) then
-			v="1"
+			v="1" -- default value
 		end
 		if use_func and (not f or f=="")then
 			f="1"
@@ -176,7 +175,11 @@ local function prepare(txt_tmpl, force)
 		return ""
 	end)
 	if trailing and trailing~="" then
-		if not force and trailing==txt_tmpl then error("Warning: the template seems not parsed at all",2) end
+		if not force and trailing==txt_tmpl then
+			io.stderr:write("Warning: the template seems not parsed at all\n")
+			io.stderr:write(txt_tmpl.."\n")
+			--error("Warning: the template seems not parsed at all",2)
+		end
 		add(static(trailing))
 	end
 	return ast
@@ -245,8 +248,10 @@ M.ast["var"] = function(ast, values, templates, dynamicfield)
 		v2 = values[k]
 	end
 
+	if not v2 then v2="" end
+	--assert(v2, "no value found for "..tostring(k))
+
 	local tag = M.astfield
-	assert(v2, "no value found for "..tostring(k))
 	for _n=1,10 do -- while v3 is a template (max 10 recursions)
 		v2 = render(v2, values, templates, dynamicfield)
 		if type(v2)~="table" then
@@ -272,7 +277,10 @@ M.ast["loop"] = function(ast, values, templates, dynamicfield)
 		templatename = assert(tonumber(templatename, 10), "fail to convert base10 number")
 	end
 
-	local list = assert(values[k])
+	if k=="" then
+		io.stderr:write("Warning k is an empty string")
+	end
+	local list = values[k] or {""}
 	local template = templates[templatename]
 	assert(type(template)=="table")
 	local dynamic = nil
@@ -325,7 +333,8 @@ M.ast["Convert"] = function(ast, values, templates, dynamicfield) -- +functions
 	
 end
 
-M.eolcontrol = function(...) return require"tmpl.eolcontrol"(...) end
+M.eolcontrol = function(...) return require"mini.tmpl.eolcontrol"(...) end
+M.indentcontrol = function(...) return require"mini.tmpl.indentcontrol"(...) end
 
 M.debug = dbg
 
@@ -334,5 +343,22 @@ M.static = static
 M.var = var
 M.loop = loop
 
-
 return M
+--[[
+
+!{ ... }
+
+	[^] varname (uplevel)
+	[`] varname (meta)
+	    varname		1 ; abc ; foo.bar ; buz[*] ?
+	 |  funcname
+	 >  templatename
+
+	vvv | fff > ttt
+	gsub("(.+)([|>])", function(a,b)
+		table.insert(result, a) -- trim(a)
+		table.insert(result, b)
+	end)
+	table.insert(result, trailing)
+
+]]--
