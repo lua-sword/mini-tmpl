@@ -1,6 +1,6 @@
 
-local tmpl = require "tmpl"
-local eolcontrol = require "tmpl.eolcontrol"
+local tmpl = require "mini-tmpl"
+local eolcontrol = require "mini-tmpl.eolcontrol"
 assert(eolcontrol(([[
 foo\n
 bar

@@ -1,4 +1,4 @@
-local E = require "tmpl.eolcontrol"
+local E = require "mini-tmpl.eolcontrol"
 
 -- 'foo!n\nbar'         => 'foo\nbar'
 -- 'foo!!n\nbar'        => 'foo!nbar'

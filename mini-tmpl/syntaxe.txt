@@ -1,0 +1,41 @@
+--
+-- Syntax : '!{'  [<spaces>] ( [special] [value] )* '}'
+-- special: '|' or '>'
+-- value  : everything except special
+--
+-- !{ varname }
+-- !{ varname | funcname }
+-- !{ varname > templatename }
+-- !{ varname | funcname > templatename }
+-- !{ varname | funcname1 | funcname2 > templatename }
+--
+-- !{ "var name"  | "func name" > "temp late name" } TODO: supporte quote to allow space in name ?
+
+-- Syntax: '!{' [<spaces>] [<var>] [<spaces>] [ '>' [<spaces>] <template> [<spaces> <ignored>] ]] '}'
+-- pour avoir
+--	!{>tmpl1}
+--	!{var1}
+--	!{var1>tmpl1}
+--	!{ var1 > tmpl1 } avec des espaces qui seront ignorés
+--
+--	!{  var1 }	equivalent au futur !{ local var1 }  tout est local par defaut
+--	!{ .var1 }      equivalent au futur !{ meta  var1 }
+--	!{ ^var1 }	equivalent au futur !{ global var1 }
+-- also valid:
+--	!{}			=> substitute to empty string
+--	!{  }			=> substitute to empty string
+-- implicite name :
+--	!{foo>}	!{ foo > }      equals to !{foo>1}
+--	!{>}	!{ > }          equals to !{1>1}
+--	!{1>}	!{>1}		equals to !{1>1}
+-- TODO:
+--	!{a>b foo bar}		=> use extra "foo bar" parametter (like jinja ?)
+--	!{ a b c > d e f }	=> capturer plusieurs "mots" autour du '>' pour supporter un ou des prefixes
+--
+--	!{ tab1.tab2.var1 }	=> walk into tables ?
+
+-- Limitations:
+--  can not access a value by a number key as string
+--		   t["1"]	=> not supported
+--	!{1}	=> t[1]		=> ok
+--	!{one}	=> t["one"]	=> ok
