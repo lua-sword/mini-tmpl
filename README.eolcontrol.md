@@ -24,7 +24,7 @@ Use any kind of end-of-line in your template, even mixed.
 ## Sample
 
 ```lua
-local eolcontrol = require "tmpl.eolcontrol"
+local eolcontrol = require "mini-tmpl.eolcontrol"
 
 assert(eolcontrol([[
 FOO!R

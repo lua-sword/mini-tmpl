@@ -1,0 +1,20 @@
+-- 1. all CRLF or CR => L
+--	\r\n -> \n
+--	\r -> \n
+--
+-- 2. how to get a litteral '!'
+--	!! => !_  (quoted '!')
+--	!_ => !__ (unquoting workaround)
+--
+-- 3. Check template issue case
+--	find ![nrR][^\n]  => error if found
+--
+-- 4. Remove all original end of line
+--
+-- 5. Make the end of line substitutions
+--	!R + \n -> \r\n
+--	!n + \n -> \n
+--	!r + \n -> \r
+--
+-- 6. unquote the '!' to finish the 2. job
+--	!_ => !   (unquote)

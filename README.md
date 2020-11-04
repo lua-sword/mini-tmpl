@@ -1,4 +1,4 @@
-# mini tmpl
+# mini-tmpl
 
 ## Features
 
@@ -13,12 +13,18 @@ No specific web encoding stuff
 ## Samples
 
 ```lua
-local tmpl = require "tmpl"
+local tmpl = require "mini-tmpl"
 local a = tmpl.prepare("hello !{1}!")
-local b = tmpl.render(a, {[1]="world"})
-print(b) -- "hello world!"
+local r = tmpl.render(a, {[1]="world"})
+print(r) -- "hello world!"
 ```
 
+```lua
+local tmpl = require "mini-tmpl"
+local templates = { tmpl.prepare("hello !{1}!") }
+local a = tmpl.prepare("hello !{*>1}!")
+local r = tmpl.render(a, {[1]="world"}, templates)
+```
 
 # end-of-line control
 
