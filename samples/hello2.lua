@@ -1,11 +1,12 @@
 local tmpl = require "mini-tmpl"
 
 local a = tmpl.prepare("hello !{who}!")
-local b = tmpl.render(a, {["who"]="world"})
-print(b) -- "hello world!"
-assert(b=="hello world!")
+local r = tmpl.render(a, {["who"]="world"})
+print(r) -- "hello world!"
+assert(r=="hello world!")
 
-local b2 = tmpl.render(a, {who="everybody"})
-print(b2) -- "hello everybody!"
-assert(b2=="hello everybody!")
+-- same template, another data
+local r2 = tmpl.render(a, {who="everybody"})
+print(r2) -- "hello everybody!"
+assert(r2=="hello everybody!")
 print("ok")

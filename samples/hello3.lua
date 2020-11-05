@@ -11,10 +11,11 @@ local data = {
 	},
 }
 
-local subtemplates = {
+local templates = {
+	temp_main,
 	peoples = temp_peoples,
 }
-local b = tmpl.render(temp_main, data, subtemplates)
-print(b)
-assert(b=="hello \n - John Smith\n - foo bar.\nNice to meet you!")
+local r = tmpl.render(1, data, templates)
+print(r)
+assert(r=="hello \n - John Smith\n - foo bar.\nNice to meet you!")
 print("ok")

@@ -1,6 +1,6 @@
 
 local M = {}
-M._VERSION = "mini-tmpl.prepare 0.3.0"
+M._VERSION = "mini-tmpl.prepare 0.4.0"
 
 local C = require "mini-tmpl.common"
 
@@ -12,10 +12,22 @@ M.closemark = '}'
 M.special = ">|"
 --M.capturepattern = "["..M.captureignoredspaces..M.special..M.captureletter.."]+"
 
+--local static	= function(x)				return x end
+--local var	= function(varname, scope)		return {[C.astfield]="var",      varname, [C.scopefield]=scope,} end
+--local loop	= function(varname, template_name)	return {[C.astfield]="loop"      varname, template_name,} end
+--local include	= function(template_name)		return {[C.astfield]="include",  include=template_name,} end
+--local template= function(...)				return {[C.astfield]="template", ...} end
+
+-- template:	{1, ...}
+-- include:	{2, template_name}
+-- loop:	{3, varname, template_name}
+-- var: 	{4, varname, scope}
 local static	= function(x)				return x end
-local var	= function(varname, scope)		return {varname,		[C.astfield]="var", [C.scopefield]=scope} end
-local loop	= function(varname, template_name)	return {varname, template_name,	[C.astfield]="loop"} end
-local include	= function(template_name)		return {template_name,		[C.astfield]="include"} end
+local var	= function(varname, scope)		return {C.const.var,		varname, scope		} end
+local loop	= function(varname, template_name)	return {C.const.loop,		varname, template_name	} end
+local include	= function(template_name)		return {C.const.include,	template_name		} end
+local template	= function(...)				return {C.const.template,	...			} end
+
 
 local function trim(s)
 	return s:match("^%s*(.*%S)" or "")
@@ -25,19 +37,21 @@ end
 local function splitmarkcontent(data)
 	local insert = table.insert
 	local result = {}
-	local trailing = data:gsub("([^"..M.special.."]+)(["..M.special.."])", function(a,b)
-		insert(result, trim(a))
-		insert(result, b)
+	local trailing = data:gsub("(["..M.special.."]?)([^"..M.special.."]+)", function(a,b)
+		if a ~= "" then insert(result, a) end
+		insert(result, trim(b))
 		return ""
 	end)
 	insert(result, trim(trailing))
 	return result
 end
+assert(require"tprint"(splitmarkcontent("^foo|bar>buz")==[[{"^foo","|","bar",">","buz",}]]))
+assert(require"tprint"(splitmarkcontent(">foo"))==[[{">","foo",}]])
+--print( require"tprint"(splitmarkcontent( "^ .fo .foo > ba bar | bu buz>\"baz toto\" titi | " )) ) os.exit()
 
 local function prepare(txt_tmpl, force)
 	assert(type(txt_tmpl)=="string", "invalid template type, must be a string")
-	local tag = C.astfield
-	local ast = {[tag]="template"}
+	local ast = template()
 	local add = function(item) table.insert(ast, item) end
 
 	local pat = "(.-)"..M.openmark.."(.-)".. M.closemark

@@ -1,11 +1,20 @@
 
 local M = {}
-M._VERSION = "mini-tmpl.common 0.3.0"
+M._VERSION = "mini-tmpl.common 0.4.0"
 
-M.astfield="tag"
---M.astfield= setmetatable({},{__tostring=function()return "ASTfield"end,__metatable=true})
+local const = {"template","include","loop","var"}
+for i,v in ipairs(const) do
+	const[v]=i
+end
+M.const = const
 
-M.scopefield="scope"
+--M.astfield="tag"
+--M.astfield=1
+
+--M.scopefield="scope"
+--M.scopefield=3
+
 M.dynamicfield="dynamic"
+--M.dynamicfield=4
 
 return M
