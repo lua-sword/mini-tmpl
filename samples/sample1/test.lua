@@ -1,4 +1,4 @@
-local tmpl = require "tmpl"
+local tmpl = require "mini-tmpl"
 --local main = require "ast-tmpl.main"
 local main = tmpl.prepare( require "txt-tmpl.main" )
 

@@ -1,4 +1,5 @@
 local tmpl = require "mini-tmpl"
+tmpl.render_mod.enabledynamic()
 local prep = tmpl.prepare
 
 --tmpl.astfield     = "Type"

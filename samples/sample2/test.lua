@@ -1,5 +1,5 @@
-local tmpl = require "tmpl"
-local eolcontrol = tmpl.eolcontrol
+local tmpl = require "mini-tmpl"
+local eolcontrol = require "mini-tmpl.eolcontrol"
 
 --local main = require "ast-tmpl.main"
 local templates = {}
