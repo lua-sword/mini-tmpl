@@ -1,4 +1,4 @@
-local tmpl = require "tmpl"
+local tmpl = require "mini-tmpl"
 
 local template = tmpl.prepare "Hello !{1}."
 local data = {"John"}

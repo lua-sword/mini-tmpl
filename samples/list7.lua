@@ -1,4 +1,4 @@
-local tmpl = require "tmpl"
+local tmpl = require "mini-tmpl"
 local prep = tmpl.prepare
 
 --tmpl.astfield     = "Type"
@@ -26,7 +26,7 @@ local data = {
 }
 
 --[[
-local dbg = require "tmpl.debug"
+local dbg = require "mini-tmpl.debug"
 dbg.setname("main", main)
 dbg.setname("t_list", t_list)
 dbg.setname("t_list.usual", t_list.usual)

@@ -1,4 +1,4 @@
-local tmpl = require "tmpl"
+local tmpl = require "mini-tmpl"
 local tprint = require "tprint"
 local a = tmpl.prepare("hello !{ 1 ign1 | foo ign2 > templ1 ign3 }!")
 local a = tmpl.prepare("hello !{ 1 | foo > templ1}!")

@@ -1,4 +1,4 @@
-local tmpl = require "tmpl"
+local tmpl = require "mini-tmpl"
 
 local prep = tmpl.prepare
 local t_item = prep("- !{1}\n")

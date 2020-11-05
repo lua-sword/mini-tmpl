@@ -1,4 +1,4 @@
-local tmpl = require "tmpl"
+local tmpl = require "mini-tmpl"
 
 local temp_main = tmpl.prepare("hello !{peoples>peoples}.\n!{welcome}!")
 local temp_peoples = tmpl.prepare("\n - !{1} !{2}")

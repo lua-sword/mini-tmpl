@@ -1,4 +1,4 @@
-local tmpl = require "tmpl"
+local tmpl = require "mini-tmpl"
 
 local a = tmpl.prepare("hello !{who}!")
 local b = tmpl.render(a, {["who"]="world"})
