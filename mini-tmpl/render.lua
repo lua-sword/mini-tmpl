@@ -9,8 +9,8 @@ local function internal_render(ast, parent, current)
 	assert(parent.values, "missing values")
 	assert(parent.config, "missing config")
 	assert(parent.config.dynamicfield, "missing config.dynamicfield")
-	assert(parent.config.astfield, "missing config.astfield")
 	assert(parent.config.main, "missing config.main")
+	assert(type(current)=="table", "current must be a table")
 
 	if type(ast)=="string" then -- use native string instead of an ast for String
 		return ast
@@ -24,9 +24,9 @@ local function internal_render(ast, parent, current)
 	end
 	error("invalid ast type, got "..type(ast))
 end
-local function pub_render(a, values, templates, dynamicfield) -- main, astfield
+local function pub_render(a, values, templates, dynamicfield) -- main
 	if not dynamicfield then dynamicfield = C.dynamicfield end
-	local config = {dynamicfield=dynamicfield, main=1, astfield=(C.astfield or "tag")}
+	local config = {dynamicfield=dynamicfield, main=1}
 	templates = templates or {}
 
 	local ast
@@ -42,14 +42,14 @@ local function pub_render(a, values, templates, dynamicfield) -- main, astfield
 end
 M.render=pub_render
 
-local function pub_render2(templates, values, main, dynamicfield, astfield)
+local function pub_render2(templates, values, conf) -- main, dynamicfield
 	assert(type(templates)=="table")
 	assert(type(values)=="table")
-	main = main or 1
+	conf = conf or {}
+	assert(type(conf)=="table")
 	local config = {
-		main = main,
-		dynamicfield =(dynamicfield or C.dynamicfield or "dynamic"),
-		astfield =(astfield or C.astfield or "tag"),
+		main = conf.main or 1,
+		dynamicfield = conf.dynamicfield or C.dynamicfield,
 	}
 	local parent = {templates=templates, values=values, config=config}
 	local ast = assert(templates[main])
