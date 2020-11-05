@@ -1,9 +1,9 @@
 local tmpl = require "mini-tmpl"
 
-local prep = tmpl.prepare
-local templates = {}
-templates.item = prep([[- !{1}!{^l}]])
-local main = prep([[!{items>item}]])
+local templates = {
+	main = tmpl.prepare([[!{items>item}]]),
+	item = tmpl.prepare([[- !{1}!{^l}]]),
+}
 
 local data = {
 	items = {
@@ -14,7 +14,7 @@ local data = {
 	l="\n",
 }
 
-local b = tmpl.render(main, data, templates)
+local b = tmpl.render(templates, data, {main="main"})
 io.stdout:write(b)
 assert(b=="- line 1\n- line 2\n- line 3\n")
 print("ok")

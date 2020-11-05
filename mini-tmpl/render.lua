@@ -24,7 +24,24 @@ local function internal_render(ast, parent, current)
 	end
 	error("invalid ast type, got "..type(ast))
 end
-local function pub_render(a, values, templates, dynamicfield) -- main
+local function pub_render(templates, values, conf) -- main, dynamicfield
+	assert(type(templates)=="table")
+	assert(type(values)=="table")
+	conf = conf or {}
+	assert(type(conf)=="table")
+	local config = {
+		main = conf.main or 1,
+		dynamicfield = conf.dynamicfield or C.dynamicfield,
+	}
+	local parent = {templates=templates, values=values, config=config}
+	
+	local ast = assert(templates[config.main])
+	return internal_render(ast, parent, {})
+end
+M.render=pub_render
+
+--[[
+local function pub_render_old(a, values, templates, dynamicfield) -- main
 	if not dynamicfield then dynamicfield = C.dynamicfield end
 	local config = {dynamicfield=dynamicfield, main=1}
 	templates = templates or {}
@@ -40,22 +57,8 @@ local function pub_render(a, values, templates, dynamicfield) -- main
 	local parent = {values=values, templates=templates, config=config}
 	return internal_render(ast, parent, {})
 end
-M.render=pub_render
-
-local function pub_render2(templates, values, conf) -- main, dynamicfield
-	assert(type(templates)=="table")
-	assert(type(values)=="table")
-	conf = conf or {}
-	assert(type(conf)=="table")
-	local config = {
-		main = conf.main or 1,
-		dynamicfield = conf.dynamicfield or C.dynamicfield,
-	}
-	local parent = {templates=templates, values=values, config=config}
-	local ast = assert(templates[main])
-	return internal_render(ast, parent, {})
-end
-M.render2=pub_render2
+M.render_old=pub_render_old
+]]--
 
 M.ast = {}
 M.ast[C.const.template] = function(ast, parent, current)

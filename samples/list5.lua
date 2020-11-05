@@ -20,6 +20,7 @@ t_list[dynamicfield] = f
 --print(require"tprint"(main,{inline=false}))
 
 local templates = {
+	main,
 	["x"] = t_list
 }
 
@@ -40,9 +41,9 @@ dbg.setname("t_list.last", t_list.last)
 dbg.enabled = true
 ]]--
 
-print(require"tprint"({main=main, data=data, templates=templates},{inline=false}))
+--print(require"tprint"({data=data, templates=templates},{inline=false}))
 
-local b = tmpl.render(main, data, templates, dynamicfield)
+local b = tmpl.render(templates, data, {dynamicfield=dynamicfield})
 io.stdout:write(b)
 assert(b=="- line 1,\n- line 2,\n- line 3.\n")
 print("ok")

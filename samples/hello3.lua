@@ -15,7 +15,7 @@ local templates = {
 	temp_main,
 	peoples = temp_peoples,
 }
-local r = tmpl.render(1, data, templates)
+local r = tmpl.render(templates, data)
 print(r)
 assert(r=="hello \n - John Smith\n - foo bar.\nNice to meet you!")
 print("ok")

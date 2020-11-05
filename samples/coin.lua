@@ -1,18 +1,19 @@
 local tmpl = require "mini-tmpl"
-local prep = tmpl.prepare
 
-local COIN = prep "!{ COIN >o_- }"
-local COINCOIN = {["o_-"] = prep("- !{1}\n")}
+local COIN = tmpl.prepare "!{ COIN >o_- }"
+local COINCOIN = {
+	COIN,
+	["o_-"] = tmpl.prepare "- !{1}\n"
+}
 
-local b = tmpl.render( COIN,
-{
+local r = tmpl.render(COINCOIN, {
 	COIN={
 		"Coin",
 		"Coin Coin",
 		"PAN! PAN!",
 	}
-}, COINCOIN)
+})
 
-io.stdout:write(b)
-assert(b=="- Coin\n- Coin Coin\n- PAN! PAN!\n")
+io.stdout:write(r)
+assert(r=="- Coin\n- Coin Coin\n- PAN! PAN!\n")
 print("ok")

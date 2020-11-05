@@ -5,9 +5,8 @@ local tx = prep [[!{1},]]
 tx.dynamic = function(n, total) return "foo" end
 tx.sub = tx.sub or {}
 tx.sub.foo = prep([[FOO!]], true) -- no mark, need to force
-
-print(tmpl.render(tx, {[1]="hello"}))
-assert(tmpl.render(tx, {[1]="hello"})=="hello,")
+local r = tmpl.render({tx}, {[1]="hello"})
+assert(r=="hello,")
 
 ------------------------------------------------
 
@@ -17,7 +16,7 @@ do
 	-- create one sub-template named 'FOO'
 	local FOO = prep( [[v1=!{1};v2=!{2};e=!{eol};!{^eol}]].." " )
 	-- all templates
-	local subtemplates = {FOO = FOO}
+	local templates = {FOO = FOO, main}
 	-- the data
 	local data ={
 		foo={
@@ -28,14 +27,14 @@ do
 		},
 		eol="\n",
 	}
-	print( tmpl.render(maintemplate, data, subtemplates) )
+	print( tmpl.render(templates, data) )
 end
 
 local a = prep [[!{foo>FOO}!]]
-local all = {FOO = prep([[i=!{.i};v=!{1};!{^eol}]].." ")}
-print(tmpl.render(a, {
+local all = {a, FOO = prep([[i=!{.i};v=!{1};!{^eol}]].." ")}
+print(tmpl.render(all, {
 	foo={"aa", "bb", "cc"},
 	eol="\n",
-}, all))
+}))
 
 

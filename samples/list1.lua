@@ -1,8 +1,7 @@
 local tmpl = require "mini-tmpl"
 
-local prep = tmpl.prepare
-local t_item = prep("- !{1}\n")
-local t_items = prep([[!{v_items>t_item}]])
+local t_item  = tmpl.prepare "- !{1}\n"
+local t_items = tmpl.prepare [[!{v_items>t_item}]]
 
 local data = {
 	v_items = {
@@ -11,9 +10,9 @@ local data = {
 		"line 3",
 	},
 }
-local templates={t_item=t_item}
+local templates={[1]=t_items, t_item=t_item}
 
-local b = tmpl.render(t_items, data, templates)
-io.stdout:write(b)
-assert(b=="- line 1\n- line 2\n- line 3\n")
+local r = tmpl.render(templates, data)
+io.stdout:write(r)
+assert(r=="- line 1\n- line 2\n- line 3\n")
 print("ok")
