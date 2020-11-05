@@ -41,8 +41,9 @@ end
 
 -- usefull to include static content (template without mark)
 M.ast["include"] = function(ast, values, templates, dynamicfield)
-	-- FIXME IMPROVEME !
-	return templates[ast[1]][1]
+	local templatename = ast[1]
+	local template = templates[templatename]
+	return internal_render(template, values, templates, dynamicfield)
 end
 
 -- varname -> string value
@@ -77,6 +78,34 @@ end
 
 -- varname -> list -> loop(list)
 M.ast["loop"] = function(ast, values, templates, dynamicfield)
+	local k = assert(ast[1])
+	local templatename = assert(ast[2])
+	assert( templatename and templatename~="" )
+	if type(templatename)=="string" and templatename:find("^[0-9]+$") then -- is a base10 number
+--		Dprint("convert templatename from string to number")
+		templatename = assert(tonumber(templatename, 10), "fail to convert base10 number")
+	end
+
+	if k=="" then
+		io.stderr:write("Warning k is an empty string")
+	end
+	local template = templates[templatename]
+	assert(type(template)=="table")
+	local list = values[k] or {""}
+	local r = {}
+	for i,item in ipairs(list) do
+		local item2=item
+		if type(item)=="string" then
+			item2={item,i=tostring(i)}
+		end
+		local values2 = {["meta"]={i=tostring(i)}, ["local"]=item2, ["global"]=values, item}
+		table.insert(r, internal_render(template, values2, templates, dynamicfield))
+	end
+	return table.concat(r,"")
+end
+
+-- varname -> list -> loop(list)
+M.ast["loopDynamic"] = function(ast, values, templates, dynamicfield)
 	assert(dynamicfield, "missing dynamicfield")
 	--Dprint("DEBUG tmpl.ast.loop(): "..tprint({ast, values, templates}, {inline=false}))
 	local k = assert(ast[1])
@@ -90,9 +119,13 @@ M.ast["loop"] = function(ast, values, templates, dynamicfield)
 	if k=="" then
 		io.stderr:write("Warning k is an empty string")
 	end
-	local list = values[k] or {""}
 	local template = templates[templatename]
 	assert(type(template)=="table")
+	local list = values[k] or {""}
+--	if k=="*" then
+--		io.stderr:write("Warning k is a star!")
+--		return internal_render(template, values, templates, dynamicfield)
+--	end
 	local dynamic = nil
 	local subtemplatesparent = nil
 	if type(template[dynamicfield])=="function" then
@@ -136,11 +169,14 @@ M.ast["loop"] = function(ast, values, templates, dynamicfield)
 	end
 	return table.concat(r,"")
 end
+
 -- function(templates, values, functions, config)
 -- args = { templates, values, functions, {dynamicfield="DYN", main=1})
 M.ast["Convert"] = function(ast, values, templates, dynamicfield) -- +functions
 end
 
-setmetatable(M, {__call=function(_, ...) return public_render(...) end})
+M.enabledynamic = function() M.ast.loop=M.ast.loopDynamic end
+
+setmetatable(M, {__call=function(_, ...) return pub_render(...) end})
 
 return M
