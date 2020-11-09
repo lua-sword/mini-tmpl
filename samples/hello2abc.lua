@@ -4,5 +4,5 @@ local templates = {
 	b = tmpl.prepare("!{>c}"),
 	c = tmpl.prepare("hello !{1}!"),
 }
-local r = tmpl.render("a", {[1]="world"}, templates)
+local r = tmpl.render(templates, {[1]="world"}, {main="a"})
 print(r)
