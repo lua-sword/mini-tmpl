@@ -1,6 +1,6 @@
 
 local M = {}
-M._VERSION = "mini-tmpl.prepare 0.4.0"
+M._VERSION = "mini-tmpl.prepare 0.5.0"
 
 local C = require "mini-tmpl.common"
 
@@ -23,10 +23,10 @@ M.special = ">|"
 -- loop:	{3, varname, template_name}
 -- var: 	{4, varname, scope}
 local static	= function(x)				return x end
-local var	= function(varname, scope)		return {C.const.var,		varname, scope		} end
-local loop	= function(varname, template_name)	return {C.const.loop,		varname, template_name	} end
-local include	= function(template_name)		return {C.const.include,	template_name		} end
-local template	= function(...)				return {C.const.template,	...			} end
+local var	= function(varname, scope)		return {C.const.var,		2, varname, scope		} end
+local loop	= function(varname, template_name)	return {C.const.loop,		3, varname, template_name, false	} end
+local include	= function(template_name)		return {C.const.include,	1, template_name		} end
+local template	= function(...)				return {C.const.template,	0, ...				} end
 
 
 local function trim(s)
