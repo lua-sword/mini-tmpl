@@ -2,7 +2,7 @@
 local M = {}
 M._VERSION = "mini-tmpl.common 0.5.0"
 
-local const = {"template","include","loop","var","ifvar"}
+local const = {"TEMPLATE","INCLUDE","LOOP","VAR","IF"}
 for i,v in ipairs(const) do
 	const[v]=i
 end

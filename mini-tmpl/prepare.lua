@@ -2,32 +2,21 @@
 local M = {}
 M._VERSION = "mini-tmpl.prepare 0.5.0"
 
-local C = require "mini-tmpl.common"
+local const = assert(require "mini-tmpl.common".const)
 
 M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
 M.closemark = '}'
---M.captureprefixpattern= "[%^%.]?"
---M.captureignoredspaces = " \t\r\n"
---M.captureletter = "0-9a-zA-Z_-"
 M.special = ">|"
---M.capturepattern = "["..M.captureignoredspaces..M.special..M.captureletter.."]+"
-
---local static	= function(x)				return x end
---local var	= function(varname, scope)		return {[C.astfield]="var",      varname, [C.scopefield]=scope,} end
---local loop	= function(varname, template_name)	return {[C.astfield]="loop"      varname, template_name,} end
---local include	= function(template_name)		return {[C.astfield]="include",  include=template_name,} end
---local template= function(...)				return {[C.astfield]="template", ...} end
 
 -- template:	{1, ...}
 -- include:	{2, template_name}
 -- loop:	{3, varname, template_name}
 -- var: 	{4, varname, scope}
 local static	= function(x)				return x end
-local var	= function(varname, scope)		return {C.const.var,		2, varname, scope		} end
-local loop	= function(varname, template_name)	return {C.const.loop,		3, varname, template_name, false	} end
-local include	= function(template_name)		return {C.const.include,	1, template_name		} end
-local template	= function(...)				return {C.const.template,	0, ...				} end
-
+local var	= function(varname, scope)		return {const.VAR,	2, varname, scope		} end
+local loop	= function(varname, template_name)	return {const.LOOP,	3, varname, template_name, false	} end
+local include	= function(template_name)		return {const.INCLUDE,	1, template_name		} end
+local template	= function(...)				return {const.TEMPLATE,	0, ...				} end
 
 local function trim(s)
 	return s:match("^%s*(.*%S)" or "")
