@@ -8,15 +8,13 @@ M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
 M.closemark = '}'
 M.special = ">|"
 
--- template:	{1, ...}
--- include:	{2, template_name}
--- loop:	{3, varname, template_name}
--- var: 	{4, varname, scope}
 local static	= function(x)				return x end
-local var	= function(varname, scope)		return {const.VAR,	2, varname, scope		} end
-local loop	= function(varname, template_name)	return {const.LOOP,	3, varname, template_name, false	} end
-local include	= function(template_name)		return {const.INCLUDE,	1, template_name		} end
-local template	= function(...)				return {const.TEMPLATE,	0, ...				} end
+
+local mkast = assert(require "mini-tmpl.mkast")
+local mkast_var = mkast.var
+local mkast_loop = mkast.loop
+local mkast_include = mkast.include
+local mkast_template = mkast.template
 
 local function trim(s)
 	return s:match("^%s*(.*%S)" or "")
@@ -40,7 +38,7 @@ assert(require"tprint"(splitmarkcontent(">foo"))==[[{">","foo",}]])
 
 local function prepare(txt_tmpl, force)
 	assert(type(txt_tmpl)=="string", "invalid template type, must be a string")
-	local ast = template()
+	local ast = mkast.template()
 	local add = function(item) table.insert(ast, item) end
 
 	local pat = "(.-)"..M.openmark.."(.-)".. M.closemark
@@ -121,12 +119,12 @@ local function prepare(txt_tmpl, force)
 				v = assert(tonumber(v, 10), "fail to convert base10 number")
 			end
 			if t then
-				add(loop(v, t))
+				add(mkast.loop(v, t))
 			else
-				add(var(v, scope))
+				add(mkast.var(v, scope))
 			end
 		elseif t then
-			add(include(t))
+			add(mkast.include(t))
 		end
 		return ""
 	end)

@@ -10,10 +10,13 @@ local const = assert(require "mini-tmpl.common".const)
 
 local AST = {}
 M.ast = AST
-for i, name in ipairs(const) do
-	AST[i] = require("mini-tmpl.ast."..(name:lower()))
+for i, name in pairs(const) do
+	if type(i)=="number" then
+--		print("AST", i, name)
+		AST[i] = AST[i] or require("mini-tmpl.ast."..(name:lower()))
+	end
 end
 
-M.enabledynamic = function() AST[const.loop]=require"mini-tmpl.ast.loopdynamic" end
+M.enabledynamic = function() AST[const.LOOP]=require"mini-tmpl.ast.loopdynamic" end
 
 return M

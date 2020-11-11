@@ -3,16 +3,20 @@ local M = {}
 M._VERSION = "mini-tmpl.render 0.5.0"
 
 local C = require "mini-tmpl.common"
-local AST = require "mini-tmpl.ast".ast
+assert(C.const)
+local A = require "mini-tmpl.ast"
+local AST = assert(A.ast)
 
 local function internal_render(ast, parent, current)
 	assert(parent.templates, "missing templates")
-	assert(parent.values, "missing values")
+	assert(parent.rootvalues, "missing rootvalues")
 	assert(parent.config, "missing config")
 	assert(parent.config.dynamicfield, "missing config.dynamicfield")
 	assert(parent.config.main, "missing config.main")
 	assert(parent.render, "missing render")
-	assert(type(current)=="table", "current must be a table")
+	assert(parent.eval, "missing eval")
+	assert(parent.const, "missing const")
+	--assert(type(current)=="table", "current must be a table")
 
 	if type(ast)=="string" then -- use native string instead of an ast for String
 		return ast
@@ -26,17 +30,33 @@ local function internal_render(ast, parent, current)
 	end
 	error("invalid ast type, got "..type(ast))
 end
-local function pub_render(templates, values, conf) -- main, dynamicfield
+
+-- eval is like render but for internal use
+local function eval(ast, parent, current)
+	assert(ast[1]>=100)
+	return internal_render(ast, parrent, current)
+end
+
+local function pub_render(templates, rootvalues, functions, conf) -- main, dynamicfield
 	assert(type(templates)=="table")
-	assert(type(values)=="table")
+	assert(type(rootvalues)=="table")
+	functions = functions or {}
 	conf = conf or {}
+	assert(type(functions)=="table")
 	assert(type(conf)=="table")
 	local config = {
 		main = conf.main or 1,
 		dynamicfield = conf.dynamicfield or C.dynamicfield,
 	}
-	local parent = {templates=templates, values=values, config=config, render=internal_render}
-	
+	local parent = {
+		templates=templates,
+		rootvalues=rootvalues,
+		functions=functions,
+		config=config,
+		render=internal_render,
+		eval=eval,
+		const=C.const
+	}
 	local ast = assert(templates[config.main])
 	return internal_render(ast, parent, {})
 end
