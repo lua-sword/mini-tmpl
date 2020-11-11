@@ -8,6 +8,10 @@ local A = require "mini-tmpl.ast"
 local AST = assert(A.ast)
 
 local function internal_render(ast, parent, current)
+	if type(ast)=="string" then -- use native string instead of an ast for String
+		return ast
+	end
+
 	assert(parent.templates, "missing templates")
 	assert(parent.rootvalues, "missing rootvalues")
 	assert(parent.config, "missing config")
@@ -18,10 +22,8 @@ local function internal_render(ast, parent, current)
 	assert(parent.const, "missing const")
 	--assert(type(current)=="table", "current must be a table")
 
-	if type(ast)=="string" then -- use native string instead of an ast for String
-		return ast
-	end
 	if type(ast)=="table" and type(ast[1])=="number" then
+print("render type", C.const[ast[1]], #ast, require"tprint"(ast))
 		local f = AST[ast[1]]
 		if not f then
 			error("no handler for ast type "..tostring(ast[1]))

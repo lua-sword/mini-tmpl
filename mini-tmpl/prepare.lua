@@ -8,12 +8,11 @@ M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
 M.closemark = '}'
 M.special = ">|"
 
-local static	= function(x)				return x end
-
 local mkast = assert(require "mini-tmpl.mkast")
+local mkast_static = mkast.static
 local mkast_var = mkast.var
 local mkast_loop = mkast.loop
-local mkast_include = mkast.include
+local mkast_include = mkast.include2
 local mkast_template = mkast.template
 
 local function trim(s)
@@ -38,7 +37,7 @@ assert(require"tprint"(splitmarkcontent(">foo"))==[[{">","foo",}]])
 
 local function prepare(txt_tmpl, force)
 	assert(type(txt_tmpl)=="string", "invalid template type, must be a string")
-	local ast = mkast.template()
+	local ast = mkast_template()
 	local add = function(item) table.insert(ast, item) end
 
 	local pat = "(.-)"..M.openmark.."(.-)".. M.closemark
@@ -47,7 +46,7 @@ local function prepare(txt_tmpl, force)
 		-- value: the value inside the mark
 
 		if pre and pre~="" then
-			add(static(pre))
+			add(mkast_static(pre))
 		end
 
 		local items = splitmarkcontent(value)
@@ -119,12 +118,12 @@ local function prepare(txt_tmpl, force)
 				v = assert(tonumber(v, 10), "fail to convert base10 number")
 			end
 			if t then
-				add(mkast.loop(v, t))
+				add(mkast_loop(v, t))
 			else
-				add(mkast.var(v, scope))
+				add(mkast_var(v, scope))
 			end
 		elseif t then
-			add(mkast.include(t))
+			add(mkast_include(t))
 		end
 		return ""
 	end)
@@ -134,7 +133,7 @@ local function prepare(txt_tmpl, force)
 			io.stderr:write(txt_tmpl.."\n")
 			--error("Warning: the template seems not parsed at all",2)
 		end
-		add(static(trailing))
+		add(mkast_static(trailing))
 	end
 	return ast
 end

@@ -21,15 +21,15 @@ return function(ast, parent, current)
 	end
 	assert(template, "ERROR: missing template '"..tostring(templatename).."'")
 	assert(type(template)=="table", "ERROR: template is not a table")
-	local values = assert(parent.values)
-	local list = values[k] or {""}
+	local rootvalues = assert(parent.rootvalues)
+	local list = rootvalues[k] or {""}
 	local r = {}
 	for i,item in ipairs(list) do
 		local item2=item
 		if type(item)=="string" then
 			item2={item,i=tostring(i)}
 		end
-		local values2 = {["meta"]={i=tostring(i)}, ["local"]=item2, ["global"]=values}
+		local values2 = {["meta"]={i=tostring(i)}, ["local"]=item2, ["global"]=rootvalues}
 		local current = {values = values2}
 		table.insert(r, render(template, parent, current))
 	end

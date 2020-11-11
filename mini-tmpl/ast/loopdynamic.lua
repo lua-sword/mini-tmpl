@@ -43,8 +43,8 @@ local function loopDynamic(ast, parent, current)
 		template = templatename and templates[templatename]
 	end
 	assert(type(template)=="table")
-	local values = assert(parent.values)
-	local list = values[k] or {""}
+	local rootvalues = assert(parent.rootvalues)
+	local list = rootvalues[k] or {""}
 --	if k=="*" then
 --		io.stderr:write("Warning k is a star!")
 --		return render(template, parent, current)
@@ -87,9 +87,9 @@ local function loopDynamic(ast, parent, current)
 			item2={item,i=tostring(i)}
 			--Dprint("to", tprint(item))
 		end
-		local values2 = {["meta"]={i=tostring(i)}, ["local"]=item2, ["global"]=values,}
-parent.values = values2
-		table.insert(r, render(template, parent, current)) -- fallback value item => setmetatable(item, {__index=values})
+		local values2 = {["meta"]={i=tostring(i)}, ["local"]=item2, ["global"]=rootvalues,}
+parent.rootvalues = values2
+		table.insert(r, render(template, parent, current)) -- fallback value item => setmetatable(item, {__index=rootvalues})
 	end
 	return table.concat(r,"")
 end
