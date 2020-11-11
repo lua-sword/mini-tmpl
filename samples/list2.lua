@@ -14,7 +14,7 @@ local data = {
 	l="\n",
 }
 
-local b = tmpl.render(templates, data, {main="main"})
+local b = tmpl.render(templates, data, nil, {main="main"})
 io.stdout:write(b)
 assert(b=="- line 1\n- line 2\n- line 3\n")
 print("ok")
