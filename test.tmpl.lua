@@ -20,11 +20,11 @@ txt.bar = [[!{z} !{w}]]
 do
 	local t = tmpl.prepare(txt.foo)
 	local t2 = tmpl.prepare(txt.bar)
-	local v2 = tmpl.render(t2, {
+	local v2 = tmpl.render({t2}, {
 		z="Z",
 		w="WORLD",
 	})
-	local R = tmpl.render(t, {
+	local R = tmpl.render({t}, {
 		"ME",
 		v2,
 		["q"]="'",
@@ -33,9 +33,10 @@ do
 end
 
 do
+--[[ -- test disabled : template into data is not allowed !
 	local t = tmpl.prepare(txt.foo)
 	local t2 = tmpl.prepare(txt.bar)
-	local R = tmpl.render(t, {
+	local R = tmpl.render({t}, {
 		"ME",
 		t2,
 		["q"]="'",
@@ -43,5 +44,6 @@ do
 		w="WORLD",
 	})
 	assert(R==[['I am ME Hello Z WORLD']])
+]]--
 end
 print("ok")
