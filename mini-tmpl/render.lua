@@ -35,6 +35,7 @@ end
 
 -- eval is like render but for internal use
 local function eval(ast, parent, current)
+print("EVAL call:", ast[1], require"tprint"(ast))
 	assert(ast[1]>=100)
 	return internal_render(ast, parrent, current)
 end
