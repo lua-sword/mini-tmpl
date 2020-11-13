@@ -1,6 +1,6 @@
 
 local M = {}
-M._VERSION = "mini-tmpl.common 0.5.0"
+M._VERSION = "mini-tmpl.common 0.6.0"
 
 local const = {"TEMPLATE","INCLUDE","LOOP","VAR","IF","PIPE", "EVAL"}
 for i,name in ipairs(const) do
@@ -16,13 +16,6 @@ end
 
 M.const = const
 
---M.astfield="tag"
---M.astfield=1
-
---M.scopefield="scope"
---M.scopefield=3
-
 M.dynamicfield="dynamic"
---M.dynamicfield=4
 
 return M

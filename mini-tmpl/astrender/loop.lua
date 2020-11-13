@@ -2,7 +2,7 @@
 -- varname -> list -> loop(list)
 -- ast: {1<type>, 2{ 1<k>, 2<templatename>, 3[<dynamicfield(nil)>]}, 3{...} }
 return function(ast, ARGS, CONTENT, parent, current)
-	assert(#ARGS==3) -- dynamicfield is not used
+	assert(#ARGS>=2 and #ARGS<=3) -- dynamicfield is not used
 
 	local k = assert(ARGS[1])
 	assert( k and k~="" )

@@ -20,9 +20,9 @@ end
 -- varname -> string value
 -- ast: {1<type>, 2<args(=1)>, 3<k>, 4<scope>, 5...}
 return function(ast, ARGS, CONTENT, parent, current)
-	assert(#ARGS==2)
+	assert(#ARGS>=1 and #ARGS<=2)
 	local k = assert(ARGS[1])
-	local scope = assert(ARGS[2])
+	local scope = ARGS[2] or "local"
 
 	local t, v2
 	if scope=="meta" then

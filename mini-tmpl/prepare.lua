@@ -1,12 +1,12 @@
 
 local M = {}
-M._VERSION = "mini-tmpl.prepare 0.5.0"
+M._VERSION = "mini-tmpl.prepare 0.6.0"
 
 local const = assert(require "mini-tmpl.common".const)
 
 M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
 M.closemark = '}'
-M.special = ">|"
+M.special = "<>|"
 
 local mkast = assert(require "mini-tmpl.mkast")
 local mkast_static = mkast.static
@@ -31,6 +31,17 @@ local function splitmarkcontent(data)
 	insert(result, trim(trailing))
 	return result
 end
+local function reordercontent(splitdata)
+	if splitdata[2] == "<" then
+		table.insert(splitdata, ">")
+		table.insert(splitdata, splitdata[1])
+		table.remove(splitdata, 2)
+		table.remove(splitdata, 1)
+	end
+	--TODO: bufgferise and search any "<" cut every items before this "<" put them at the end ...
+	-- to support: "TT|FF < VVV|FFF" ---> "VVV|FFF > TT|FF"
+	return splitdata
+end
 assert(require"tprint"(splitmarkcontent("^foo|bar>buz")==[[{"^foo","|","bar",">","buz",}]]))
 assert(require"tprint"(splitmarkcontent(">foo"))==[[{">","foo",}]])
 --print( require"tprint"(splitmarkcontent( "^ .fo .foo > ba bar | bu buz>\"baz toto\" titi | " )) ) os.exit()
@@ -50,6 +61,7 @@ local function prepare(txt_tmpl, force)
 		end
 
 		local items = splitmarkcontent(value)
+		items = reordercontent(items) -- transform: {"TT","<","VVV|FFF"} to {"VVV|FFF",">","TT"}
 
 		local function isTemplate(x)
 			return x == ">"
@@ -120,7 +132,7 @@ local function prepare(txt_tmpl, force)
 			if t then
 				add(mkast_loop(v, t))
 			else
-				add(mkast_var(v, scope))
+				add(mkast_var(v, scope~="local" and scope or nil))
 			end
 		elseif t then
 			add(mkast_include(t))

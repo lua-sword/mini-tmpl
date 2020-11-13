@@ -1,12 +1,12 @@
 
 local M = {}
-M._VERSION = "mini-tmpl.render 0.5.0"
+M._VERSION = "mini-tmpl.render 0.6.0"
 
 local C = require "mini-tmpl.common"
 local const = assert(C.const)
 local validast = C.validast
 
-local A = require "mini-tmpl.ast"
+local A = require "mini-tmpl.astrender"
 local AST = assert(A.ast)
 
 local function internal_render(ast, parent, current)
