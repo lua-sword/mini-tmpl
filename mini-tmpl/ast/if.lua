@@ -1,4 +1,4 @@
 
-return function(ast, parent, current)
+return function(ast, ARGS, CONTENT, parent, current)
 	error("TODO")
 end

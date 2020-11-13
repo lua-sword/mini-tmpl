@@ -17,7 +17,7 @@ local functions = {
 local data = {
 	foo = "FOO",
 }
-print(require"tprint"(templates[1],{inline=false}))
+print(require"tprint"(require"mini-tmpl.debugast"(templates[1]),{inline=false}))
 local r = tmpl.render(templates, data, functions)
 print(r)
 --assert(r=="hello world!")

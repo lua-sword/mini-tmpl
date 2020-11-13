@@ -18,21 +18,19 @@
 -- db =      {[".."]=db,     ["_G"]=db, [0]=nil,    [1]=..., }
 
 -- varname -> list -> loop(list)
--- ast: {1<type>, 2<args(=3)>, 2<k>, 3<templatename>, 4<dynamicfield>, 5...}
-local function loopDynamic(ast, parent, current)
-	assert(type(ast[1])=="number")
-	local astargs = assert(ast[2])
-	assert(astargs==3)
+-- ast: {1<type>, 2{ 1<k>, 2<templatename>, 3<dynamicfield>}, 3{...} }
+local function loopDynamic(ast, ARGS, CONTENT, parent, current)
+	assert(#ARGS==3)
 	local render = assert(parent.render)
 
-	local k = assert(ast[3])
+	local k = assert(ARGS[1])
 	assert( k and k~="" )
 
-	local templatename = assert(ast[4])
+	local templatename = assert(ARGS[2])
 	assert( templatename and templatename~="" )
 
 	local dynamicfield = assert(
-		ast[5] or parent.config.dynamicfield, "missing dynamicfield")
+		ARGS[3] or parent.config.dynamicfield, "missing dynamicfield")
 
 	local templates = assert(parent.templates)
 	local template = templates[templatename] -- try with k as string else convert k to number

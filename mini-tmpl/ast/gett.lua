@@ -1,11 +1,9 @@
 
 -- get a template from his name and render it
--- ast: {1<type>, 2<astargs(=1)>, 3<templatename>, 4...}
-return function(ast, parent, current)
-	assert(type(ast[1])=="number")
-	local astargs = assert(ast[2]) 	assert(type(astargs)=="number")
-	assert(astargs==1)
-	local k = assert(ast[3]) -- templatename
+-- ast: {1<type>, 2{ 1<templatename>}, 3{...} }
+return function(ast, ARGS, CONTENT, parent, current)
+	assert(#ARGS==1)
+	local k = assert(ARGS[1]) -- templatename
 	local intoparent = "templates"
 --print(require"tprint"(ast))
 	local t = parent[intoparent]

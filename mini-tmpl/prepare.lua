@@ -37,8 +37,8 @@ assert(require"tprint"(splitmarkcontent(">foo"))==[[{">","foo",}]])
 
 local function prepare(txt_tmpl, force)
 	assert(type(txt_tmpl)=="string", "invalid template type, must be a string")
-	local ast = mkast_template()
-	local add = function(item) table.insert(ast, item) end
+	local content = {}
+	local add = function(item) table.insert(content, item) end
 
 	local pat = "(.-)"..M.openmark.."(.-)".. M.closemark
 	local trailing = string.gsub(txt_tmpl, pat, function(pre,value)
@@ -135,6 +135,7 @@ local function prepare(txt_tmpl, force)
 		end
 		add(mkast_static(trailing))
 	end
+	local ast = mkast_template(nil, content)
 	return ast
 end
 M.prepare = prepare

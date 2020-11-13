@@ -1,16 +1,13 @@
 
 -- varname -> list -> loop(list)
--- ast: {1<type>, 2<args(=2)>, 3<k>, 4<templatename>, 5<dynamicfield(false)> 6...}
-return function(ast, parent, current)
-	assert(type(ast[1])=="number")
-	local astargs = assert(ast[2])
-	assert(astargs==3) -- dynamicfield is not used
-	local render = assert(parent.render)
+-- ast: {1<type>, 2{ 1<k>, 2<templatename>, 3[<dynamicfield(nil)>]}, 3{...} }
+return function(ast, ARGS, CONTENT, parent, current)
+	assert(#ARGS==3) -- dynamicfield is not used
 
-	local k = assert(ast[3])
+	local k = assert(ARGS[1])
 	assert( k and k~="" )
 
-	local templatename = assert(ast[4])
+	local templatename = assert(ARGS[2])
 	assert( templatename and templatename~="" )
 
 	local templates = assert(parent.templates)
@@ -21,6 +18,7 @@ return function(ast, parent, current)
 	end
 	assert(template, "ERROR: missing template '"..tostring(templatename).."'")
 	assert(type(template)=="table", "ERROR: template is not a table")
+	local render = assert(parent.render)
 	local rootvalues = assert(parent.rootvalues)
 	local list = rootvalues[k] or {""}
 	local r = {}

@@ -6,23 +6,25 @@ local const = assert(require "mini-tmpl.common".const)
 
 local unpack = table.unpack or unpack
 
-M.getf		= function(fname)			return {const.GETF,	1, fname			} end
-M.gett		= function(template_name)		return {const.GETT,	1, template_name		} end
+--M.name	= function(name)			return {const.NAME,	{name}				} end
 
-M.template	= function(...)				return {const.TEMPLATE,	0, ...				} end
+M.getf		= function(fname)			return {const.GETF,	{fname},			} end
+M.gett		= function(template_name)		return {const.GETT,	{template_name},		} end
 
-M.var		= function(varname, scope)		return {const.VAR,	2, varname, scope		} end
---M.varlocal	= function(varname, scope)		return {const.LVAR,	1, varname, 			} end
---M.varglobal	= function(varname, scope)		return {const.GVAR,	1, varname, 			} end
---M.varmeta	= function(varname, scope)		return {const.MVAR,	1, varname, 			} end
+M.template	= function(t_args, t_content)		return {const.TEMPLATE,	t_args or 0, t_content		} end
 
-M.loop		= function(varname, template_name)	return {const.LOOP,	3, varname, template_name, false} end
+M.var		= function(varname, scope)		return {const.VAR,	{varname, scope}		} end
+--M.varlocal	= function(varname, scope)		return {const.LVAR,	{varname}, 			} end
+--M.varglobal	= function(varname, scope)		return {const.GVAR,	{varname}, 			} end
+--M.varmeta	= function(varname, scope)		return {const.MVAR,	{varname}, 			} end
 
-M.include	= function(template_name)		return {const.INCLUDE,	1, template_name		} end
-M.include2	= function(template_name)		return M.template(M.gett(template_name))		end
+M.loop		= function(varname, template_name)	return {const.LOOP,	{varname, template_name, false},} end
+
+M.include	= function(template_name)		return {const.INCLUDE,	{template_name},		} end
+M.include2	= function(template_name)		return M.template(0, {M.gett(template_name)})		  end
 
 M.static	= function(x) assert(type(x)=="string")	return x end
 
-M.pipe		= function(...)				return {const.PIPE, 0, ...}				end
+M.pipe		= function(...)				return {const.PIPE, 0, {...}}			end
 
 return M
