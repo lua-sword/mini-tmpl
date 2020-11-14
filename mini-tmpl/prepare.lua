@@ -3,6 +3,7 @@ local M = {}
 M._VERSION = "mini-tmpl.prepare 0.6.0"
 
 local const = assert(require "mini-tmpl.common".const)
+local varpathsplit = require "mini-tmpl.prepare.varpathsplit"
 
 M.openmark = '!{' -- if you change them, thing to quote them for lua pattern
 M.closemark = '}'
@@ -12,7 +13,7 @@ local mkast = assert(require "mini-tmpl.mkast")
 local mkast_static = mkast.static
 local mkast_var = mkast.var
 local mkast_loop = mkast.loop
-local mkast_include = mkast.include2
+local mkast_include = mkast.include
 local mkast_template = mkast.template
 
 local function trim(s)
@@ -126,8 +127,19 @@ local function prepare(txt_tmpl, force)
 
 		-- avoid !{} or !{<spaces>} cases
 		if v and v~= "" then
-			if v:find("^[0-9]+$") then -- is a base10 number
-				v = assert(tonumber(v, 10), "fail to convert base10 number")
+			local function autonumber(v)
+				if v:find("^[0-9]+$") then -- is a base10 number
+					v = assert(tonumber(v, 10), "fail to convert base10 number")
+				end
+				return v
+			end
+			-- v = autonumber(v)
+			v = varpathsplit(v)
+			for i,v2 in ipairs(v) do
+				v[i]= autonumber(v2)
+			end
+			if #v<=1 then
+				v=v[1]
 			end
 			if t then
 				add(mkast_loop(v, t))

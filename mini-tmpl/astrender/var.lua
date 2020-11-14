@@ -1,3 +1,6 @@
+
+local walk3 = require "mini-table-walk3"
+
 -- FIXME cest quoi ce block de code ?!!
 --[[
 local function wtfcode(v2, parent, current)
@@ -22,6 +25,7 @@ end
 return function(ast, ARGS, CONTENT, parent, current)
 	assert(#ARGS>=1 and #ARGS<=2)
 	local k = assert(ARGS[1])
+	if type(k) ~="table" then k={k} end
 	local scope = ARGS[2] or "local"
 
 	local t, v2
@@ -33,7 +37,7 @@ return function(ast, ARGS, CONTENT, parent, current)
 		if scope=="local" and assert(current, "current must be a table").values then
 			t = current.values["local"]
 			assert(type(t)=="table", "localvalues must be a table")
-			v2 = t[k]
+			v2 = walk3(t, k)
 		end
 		if v2==nil or scope=="global" then
 			t = assert(parent.rootvalues)

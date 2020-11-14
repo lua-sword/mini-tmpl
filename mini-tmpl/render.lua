@@ -71,7 +71,11 @@ local function pub_render(templates, rootvalues, functions, conf) -- main, dynam
 		const=C.const
 	}
 	local ast = assert(templates[config.main])
-	return internal_render(ast, parent, {})
+	return internal_render(ast, parent, {
+		values={
+			["local"]=rootvalues,
+		}
+	})
 end
 M.render=pub_render
 
