@@ -1,5 +1,5 @@
 -- ast: {1<type>, 2<args(=0)>, 3...}
-return function(ast, ARGS, CONTENT, parent, current)
+return function(ast, ARGS, CONTENT, parent, current, meta)
 	local render = assert(parent.render)
 	local r = {}
 	for i,v in ipairs(CONTENT) do

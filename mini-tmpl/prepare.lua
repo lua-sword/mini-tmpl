@@ -111,9 +111,9 @@ local function prepare(txt_tmpl, force)
 
 		local pv=v and v:sub(1,1)
 		local scope="local"
-		if pv and pv == "." then
+		if pv and pv == "`" then
 			scope="meta"
-			v=trim(v:sub(2)) -- ". varname" -> "varname"
+			v=trim(v:sub(2)) -- "` varname" -> "varname"
 		elseif pv and pv == "^" then
 			scope="global"
 			v=trim(v:sub(2)) -- "^ varname" -> "varname"

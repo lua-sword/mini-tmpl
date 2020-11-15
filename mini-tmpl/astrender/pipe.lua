@@ -1,5 +1,5 @@
 
-return function(ast, ARGS, CONTENT, parent, current)
+return function(ast, ARGS, CONTENT, parent, current, meta)
 	assert(#ARGS==0)
 	local eval = assert(parent.eval)
 	local r

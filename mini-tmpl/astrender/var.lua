@@ -22,28 +22,18 @@ end
 
 -- varname -> string value
 -- ast: {1<type>, 2<args(=1)>, 3<k>, 4<scope>, 5...}
-return function(ast, ARGS, CONTENT, parent, current)
+return function(ast, ARGS, CONTENT, parent, current, meta)
 	assert(#ARGS>=1 and #ARGS<=2)
 	local k = assert(ARGS[1])
 	if type(k) ~="table" then k={k} end
 	local scope = ARGS[2] or "local"
 
-	local t, v2
-	if scope=="meta" then
-		t = assert(current.values)["meta"]
-		assert(type(t)=="table", "metavalues must be a table")
-		v2 = t[k]
+	local v2
+	if scope=="global" then
+		v2 = walk3(parent.rootvalues, k)
 	else
-		if scope=="local" and assert(current, "current must be a table").values then
-			t = current.values["local"]
-			assert(type(t)=="table", "localvalues must be a table")
-			v2 = walk3(t, k)
-		end
-		if v2==nil or scope=="global" then
-			t = assert(parent.rootvalues)
-			assert(type(t)=="table", "rootvalues must be a table")
-			v2 = t[k]
-		end
+--print("current", require"tprint"(current))
+		v2 = walk3(meta, k) or walk3(current, k)
 	end
 	if not v2 then v2="" end
 

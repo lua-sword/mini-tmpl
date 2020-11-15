@@ -1,7 +1,7 @@
 
 -- get a template from his name and render it
 -- ast: {1<type>, 2<astargs(=0)>, i3<template>, 4...}
-return function(ast, ARGS, CONTENT, parent, current)
+return function(ast, ARGS, CONTENT, parent, current, meta)
 	assert(#ARGS==1)
 	local a = assert(ARGS[1]) -- ast
 --FIXME: si ARGS[1] est un ast il devrait etre en content ?!

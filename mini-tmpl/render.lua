@@ -9,7 +9,7 @@ local validast = C.validast
 local A = require "mini-tmpl.astrender"
 local AST = assert(A.ast)
 
-local function internal_render(ast, parent, current)
+local function internal_render(ast, parent, current, meta)
 	if type(ast)=="string" then -- use native string instead of an ast for String
 		return ast
 	end
@@ -40,14 +40,14 @@ local function internal_render(ast, parent, current)
 	local a2,a3=ast[2], ast[3]
 	a2,a3 = (a2~=0 and a2 or {}), (a3~=0 and a3 or {})
 	assert(type(a2)=="table" and type(a3)=="table")
-	return f(ast, a2, a3, parent, current)
+	return f(ast, a2, a3, parent, current, meta or {})
 end
 
 -- eval is like render but for internal use
-local function eval(ast, parent, current)
+local function eval(ast, parent, current, meta)
 --print("EVAL call:", ast[1], require"tprint"(ast))
 	assert(ast[1]>=100)
-	return internal_render(ast, parrent, current)
+	return internal_render(ast, parrent, current, meta)
 end
 
 local function pub_render(templates, rootvalues, functions, conf) -- main, dynamicfield
@@ -71,11 +71,9 @@ local function pub_render(templates, rootvalues, functions, conf) -- main, dynam
 		const=C.const
 	}
 	local ast = assert(templates[config.main])
-	return internal_render(ast, parent, {
-		values={
-			["local"]=rootvalues,
-		}
-	})
+	--local current = {values={["local"]=rootvalues,}}
+	local current = rootvalues
+	return internal_render(ast, parent, current)
 end
 M.render=pub_render
 

@@ -1,11 +1,39 @@
+local walk3 = require "mini-table-walk3"
+
+-- TODO:
+-- {intemplate, {{var, "foo", "local"}}, {{templatename, "t1"}}
 
 -- varname -> list -> loop(list)
 -- ast: {1<type>, 2{ 1<k>, 2<templatename>, 3[<dynamicfield(nil)>]}, 3{...} }
-return function(ast, ARGS, CONTENT, parent, current)
-	assert(#ARGS>=2 and #ARGS<=3) -- dynamicfield is not used
+return function(ast, ARGS, CONTENT, parent, current, meta)
 
+	assert(#ARGS>=2 and #ARGS<=3) -- dynamicfield is not used
+	local render = assert(parent.render)
+
+-- var name to var value
 	local k = assert(ARGS[1])
-	assert( k and k~="" )
+	if type(k)~="table" and k~="" then
+		k = {k}
+	end
+
+	local rootvalues = assert(parent.rootvalues)
+
+--	local scope = ARGS[2] or "local"
+	local scope = "local"
+
+	local v2
+	if scope=="global" then
+		v2 = walk3(parent.rootvalues, k)
+	else
+--print("current", require"tprint"(current), "k", require"tprint"(k))
+		v2 = walk3(meta, k) or walk3(current, k)
+	end
+--print("v2", require"tprint"(v2))
+
+	if not v2 then v2="" end
+	--assert(type(v2)=="string", "v2 is not a string ?!")
+
+
 
 	local templatename = assert(ARGS[2])
 	assert( templatename and templatename~="" )
@@ -18,18 +46,17 @@ return function(ast, ARGS, CONTENT, parent, current)
 	end
 	assert(template, "ERROR: missing template '"..tostring(templatename).."'")
 	assert(type(template)=="table", "ERROR: template is not a table")
-	local render = assert(parent.render)
-	local rootvalues = assert(parent.rootvalues)
-	local list = rootvalues[k] or {""}
-	local r = {}
-	for i,item in ipairs(list) do
-		local item2=item
-		if type(item)=="string" then
-			item2={item,i=tostring(i)}
+
+	if type(v2) == "table" then
+
+		local r = {}
+		for i,item in ipairs(v2) do
+			local meta = {i=tostring(i), ["."]=item}
+			local current = item
+			table.insert(r, render(template, parent, current, meta))
 		end
-		local values2 = {["meta"]={i=tostring(i)}, ["local"]=item2, ["global"]=rootvalues}
-		local current = {values = values2}
-		table.insert(r, render(template, parent, current))
+		return table.concat(r,"")
 	end
-	return table.concat(r,"")
+print(require"tprint"({template=template,v2=v2, meta=meta},{inline=false}))
+	return render(template, parent, v2, meta)
 end

@@ -19,7 +19,7 @@
 
 -- varname -> list -> loop(list)
 -- ast: {1<type>, 2{ 1<k>, 2<templatename>, 3<dynamicfield>}, 3{...} }
-local function loopDynamic(ast, ARGS, CONTENT, parent, current)
+local function loopDynamic(ast, ARGS, CONTENT, parent, current, meta)
 	assert(#ARGS==3)
 	local render = assert(parent.render)
 
