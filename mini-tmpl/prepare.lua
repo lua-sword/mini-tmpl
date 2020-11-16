@@ -12,7 +12,7 @@ M.special = "<>|"
 local mkast = assert(require "mini-tmpl.mkast")
 local mkast_static = mkast.static
 local mkast_var = mkast.var
-local mkast_loop = mkast.loop
+--local mkast_loop = mkast.loop
 local mkast_include = mkast.include
 local mkast_template = mkast.template
 
@@ -141,11 +141,7 @@ local function prepare(txt_tmpl, force)
 			if #v<=1 then
 				v=v[1]
 			end
-			if t then
-				add(mkast_loop(v, t))
-			else
-				add(mkast_var(v, scope~="local" and scope or nil))
-			end
+			add(mkast_var(v, scope~="local" and scope or nil, t))
 		elseif t then
 			add(mkast_include(t))
 		end

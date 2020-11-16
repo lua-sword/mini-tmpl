@@ -9,10 +9,48 @@ local validast = C.validast
 local A = require "mini-tmpl.astrender"
 local AST = assert(A.ast)
 
+local function desoptimize(ast)
+	local a1=ast[1]
+
+	local a2 = ast[2]
+	if type(a2)~="table" then
+		if not a2 or a2==0 then
+			a2={}
+		else
+			a2={a2}
+		end
+	end
+
+	if a1==const.VAR then
+		assert(type(a2)=="table")
+		local a21 = a2[1]		-- k+scope
+
+		if type(a21)=="string" then	-- (string)k + nil(scope)
+			a2[1]={{a21}, 0}
+		else				-- k=a21[1] ; scope=a21[2]
+			local a211 = a2[1]
+			if type(a211)=="string" then
+				a2[1] = {a211}	-- (string)k => (table)k
+			end
+			if a21[2]==nil then
+				a21[2]=0
+			end
+		end
+	end
+
+	local a3 = ast[3]
+	if not a3 or a3==0 then
+		a3={}
+	end
+	return {a1, a2, a3}
+end
+
+local debuglevel = 0
 local function internal_render(ast, parent, current, meta)
 	if type(ast)=="string" then -- use native string instead of an ast for String
 		return ast
 	end
+debuglevel=debuglevel+1
 
 	assert(parent.templates, "missing templates")
 	assert(parent.rootvalues, "missing rootvalues")
@@ -40,7 +78,14 @@ local function internal_render(ast, parent, current, meta)
 	local a2,a3=ast[2], ast[3]
 	a2,a3 = (a2~=0 and a2 or {}), (a3~=0 and a3 or {})
 	assert(type(a2)=="table" and type(a3)=="table")
-	return f(ast, a2, a3, parent, current, meta or {})
+local oldast= ast
+	ast = desoptimize(ast)
+	local r = f(ast, a2, a3, parent, current, meta or {})
+debuglevel=debuglevel-1
+print("internal_render[IN]:",  debuglevel, require"tprint"(require"mini-tmpl.debugast"(oldast)))
+print("internal_render[IN2]:", debuglevel, require"tprint"(require"mini-tmpl.debugast"(ast)))
+print("internal_render[OUT]:", debuglevel, require"tprint"(require"mini-tmpl.debugast"(r)))
+	return r
 end
 
 -- eval is like render but for internal use
