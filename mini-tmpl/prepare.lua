@@ -43,8 +43,8 @@ local function reordercontent(splitdata)
 	-- to support: "TT|FF < VVV|FFF" ---> "VVV|FFF > TT|FF"
 	return splitdata
 end
-assert(require"tprint"(splitmarkcontent("^foo|bar>buz")==[[{"^foo","|","bar",">","buz",}]]))
-assert(require"tprint"(splitmarkcontent(">foo"))==[[{">","foo",}]])
+assert(require"tprint"(splitmarkcontent("^foo|bar>buz")==[[{"^foo","|","bar",">","buz"}]]))
+assert(require"tprint"(splitmarkcontent(">foo"))==[[{">","foo"}]])
 --print( require"tprint"(splitmarkcontent( "^ .fo .foo > ba bar | bu buz>\"baz toto\" titi | " )) ) os.exit()
 
 local function prepare(txt_tmpl, force)

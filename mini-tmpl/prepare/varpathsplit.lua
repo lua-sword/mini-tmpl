@@ -1,5 +1,5 @@
 
-local plainsplit = require "mini-string-split-plain"
+local plainsplit = require "mini-string-split.plain"
 local function varpathsplit(v)
 	local insert = table.insert
 	local r={}
